@@ -1,5 +1,7 @@
 #include "WithoutNet.h"
 #include "UUIDs.h"
+#include "Message.h"
+#include "MessageQueue.h"
 #include <ArduinoBLE.h>
 #include <C:\Users\Francisco\Documents\Arduino\libraries\UUID\UUID.h>
 #include <list>
@@ -19,8 +21,8 @@ class WithoutNet {
             /*uuid = new char[48];
             BLE.address().toCharArray(uuid, 48);*/
             WithoutNet* WN = this;
-            //this -> outgoingMsgChar.setEventHandler(BLERead, moveToNextMsg);
             incomingMessageHandler = nullptr;
+            msgPointer = 0;
         }
 
         int begin() {
@@ -43,10 +45,10 @@ class WithoutNet {
             WNService.addCharacteristic(incomingMsgChar);
 
             incomingMsgChar.setEventHandler(BLEWritten, onIncomingMsgCharWritten);
+            outgoingMsgChar.setEventHandler(BLERead, moveToNextMsg);
 
-            //outgoingMsgChar.setEventHandler(BLERead, moveToNextMsg);
             //BLE.setEventHandler(BLEConnected, ...);
-            //BLE.setEventHandler(BLEDisconnected, ...);
+            BLE.setEventHandler(BLEDisconnected, resetMessagePointer);
 
             BLE.addService(WNService); // Add the WN Service
 
@@ -118,10 +120,21 @@ class WithoutNet {
         char* separator = "#";
 
         std::list<char*> msgList;
-        int msgPointer = 0;
+        static int msgPointer;
 
-        void moveToNextMsg(BLEDevice central, BLECharacteristic characterstic) {
-            msgPointer = 1 + msgPointer;
+        static MessageQueue _messageQueue;
+
+        static void moveToNextMsg(BLEDevice central, BLECharacteristic characterstic) {
+            //msgPointer++;
+            Message message = _messageQueue.getNextMessage();
+            //Write message to outgoing message char
+            char messageCharArray[512];
+            message.toCharArray(messageCharArray); 
+            outgoingMsgChar.setValue(messageCharArray);
+        }
+
+        static void resetMessagePointer(BLEDevice central) {
+            msgPointer = 0;
         }
         
         char* generateMessageUuid() {
