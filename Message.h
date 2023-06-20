@@ -1,7 +1,12 @@
+#ifndef MESSAGE_H
+#define MESSAGE_H
+
+enum MessageType {DATA = 0, ACK = 1};
+
 class Message {
     public:
         Message(char* rawMessage);
-        Message(long id, MessageType type, long timestamp, char* sender, char* receiver, char* content);
+        Message(long id, MessageType type, unsigned long timestamp, char* sender, char* receiver, char* content);
         void toCharArray(char* destCharArray);
 
         long getId();
@@ -19,4 +24,4 @@ class Message {
         char* _content;
 };
 
-enum MessageType {DATA = 0, ACK = 1};
+#endif

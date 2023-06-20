@@ -2,8 +2,10 @@
 #define WithoutNet_h
 
 #include "Arduino.h"
+#include <ArduinoBLE.h>
+#include "Message.h"
 
-typedef void (*IncomingMessageHandler)(char* msg);
+typedef void (*IncomingMessageHandler)(Message msg);
 
 /*class WithoutNet {
     public:
@@ -24,14 +26,17 @@ typedef void (*IncomingMessageHandler)(char* msg);
 
 class WithoutNet {
     public:
+        WithoutNet(char* uuid, char* localName);
         int begin();
         void send(char* msg, char* destUuid);
-        void queueMsg(char* msg, char* destUuid);
         void setMaxPendingMsgs(int size);
         void getPendingMsgNum();
         void setIncomingMessageHandler(IncomingMessageHandler handler);
-        void onIncomingMessageReceived(char* msg);
     private:
+        static void moveToNextMsg(BLEDevice central, BLECharacteristic characteristic);
+        static void resetMessagePointer(BLEDevice central);
+        //char* generateMessageUuid();
+        static void onIncomingMsgCharWritten(BLEDevice central, BLECharacteristic characteristic);
         void dequeueMsg(char* msgUuid);
 };
 
