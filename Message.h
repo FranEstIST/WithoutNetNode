@@ -7,6 +7,7 @@ class Message {
     public:
         Message(char* rawMessage);
         Message(long id, MessageType type, unsigned long timestamp, char* sender, char* receiver, char* content);
+        ~Message();
         void toCharArray(char* destCharArray);
 
         long getId();

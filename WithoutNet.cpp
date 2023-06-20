@@ -4,127 +4,126 @@
 #include <C:\Users\Francisco\Documents\Arduino\libraries\UUID\UUID.h>
 #include <list>
 
-class WithoutNet {
-    public:
-        WithoutNet(char* uuid, char* localName)
-        : _WNService(WNSERVICE_UUID) {
-            /*BLE.address().toCharArray(uuid, 48);*/
-            // TODO: Check if the uuid and local name are valid
+BLEStringCharacteristic WithoutNet::_outgoingMsgChar(OUTGOING_MSG_CHAR_UUID, BLERead, 120);
+BLEStringCharacteristic WithoutNet::_incomingMsgChar(INCOMING_MSG_CHAR_UUID, BLERead | BLEWrite, 120);
+IncomingMessageHandler WithoutNet::_incomingMessageHandler;
+MessageQueue WithoutNet::_messageQueue(50);
 
-            _incomingMessageHandler = nullptr;
+WithoutNet::WithoutNet(char *uuid, char *localName)
+    : _WNService(WNSERVICE_UUID)
+{
+    /*BLE.address().toCharArray(uuid, 48);*/
+    // TODO: Check if the uuid and local name are valid
 
-            memcpy(_localName, localName, sizeof(localName)/sizeof(char));
-            memcpy(_uuid, uuid, sizeof(uuid)/sizeof(char));
+    _incomingMessageHandler = nullptr;
 
-            _outgoingMsgChar = BLEStringCharacteristic(OUTGOING_MSG_CHAR_UUID, BLERead, 120);
-            _incomingMsgChar = BLEStringCharacteristic(INCOMING_MSG_CHAR_UUID, BLERead | BLEWrite, 120);
-        }
+    memcpy(_localName, localName, sizeof(localName) / sizeof(char));
+    memcpy(_uuid, uuid, sizeof(uuid) / sizeof(char));
 
-        int begin() {
-            // Begin initialization
-            if (!BLE.begin()) {
-              return 0;
-            }
+    _outgoingMsgChar = BLEStringCharacteristic(OUTGOING_MSG_CHAR_UUID, BLERead, 120);
+    _incomingMsgChar = BLEStringCharacteristic(INCOMING_MSG_CHAR_UUID, BLERead | BLEWrite, 120);
+}
 
-            BLE.setLocalName(_localName);
-            BLE.setAdvertisedService(_WNService); // Add the service UUID
+int WithoutNet::begin()
+{
+    // Begin initialization
+    if (!BLE.begin())
+    {
+        return 0;
+    }
 
-            // Add the outgoing message characteristic (where messages sent from this
-            // device are written to)
-            _WNService.addCharacteristic(_outgoingMsgChar);
+    BLE.setLocalName(_localName);
+    BLE.setAdvertisedService(_WNService); // Add the service UUID
 
-            // Add the incoming message characteristic (where messages sent to this
-            // device are written to)
-            _WNService.addCharacteristic(_incomingMsgChar);
+    // Add the outgoing message characteristic (where messages sent from this
+    // device are written to)
+    _WNService.addCharacteristic(_outgoingMsgChar);
 
-            _incomingMsgChar.setEventHandler(BLEWritten, onIncomingMsgCharWritten);
-            _outgoingMsgChar.setEventHandler(BLERead, moveToNextMsg);
+    // Add the incoming message characteristic (where messages sent to this
+    // device are written to)
+    _WNService.addCharacteristic(_incomingMsgChar);
 
-            //BLE.setEventHandler(BLEConnected, ...);
-            BLE.setEventHandler(BLEConnected, resetMessagePointer);
+    _incomingMsgChar.setEventHandler(BLEWritten, onIncomingMsgCharWritten);
+    _outgoingMsgChar.setEventHandler(BLERead, moveToNextMsg);
 
-            BLE.addService(_WNService); // Add the WN Service
+    // BLE.setEventHandler(BLEConnected, ...);
+    BLE.setEventHandler(BLEConnected, resetMessagePointer);
 
-            BLE.advertise();
+    BLE.addService(_WNService); // Add the WN Service
 
-            return 1;
-        }
-        
-        void send(char* msg, char* destUuid) {
-            Message message = Message(_messageCounter, (MessageType) DATA, millis(), _uuid, destUuid, msg);
-            _messageQueue.addMessage(message);
-        }
+    BLE.advertise();
 
-        void setMaxPendingMsgs(int size) {
-            // TODO
-        }
+    return 1;
+}
 
-        void getPendingMsgNum() {
-            // TODO
-        }
+void WithoutNet::send(char *msg, char *destUuid)
+{
+    Message message = Message(_messageCounter, (MessageType)DATA, millis(), _uuid, destUuid, msg);
+    _messageQueue.addMessage(message);
+}
 
-        void setIncomingMessageHandler(IncomingMessageHandler incomingMessageHandler) {
-            _incomingMessageHandler = incomingMessageHandler;
-        }
+void WithoutNet::setMaxPendingMsgs(int size)
+{
+    // TODO
+}
 
-    private:
-        char _uuid[37];
-        char _localName[33];
+void WithoutNet::getPendingMsgNum()
+{
+    // TODO
+}
 
-        BLEService _WNService;
-        static BLEStringCharacteristic _outgoingMsgChar;
-        static BLEStringCharacteristic _incomingMsgChar;
+void WithoutNet::setIncomingMessageHandler(IncomingMessageHandler incomingMessageHandler)
+{
+    _incomingMessageHandler = incomingMessageHandler;
+}
 
-        static IncomingMessageHandler _incomingMessageHandler;
+void WithoutNet::moveToNextMsg(BLEDevice central, BLECharacteristic characterstic)
+{
+    Message message = _messageQueue.getNextMessage();
 
-        long _messageCounter = 0;
+    // Write message to outgoing message char
+    char messageCharArray[512];
+    message.toCharArray(messageCharArray);
+    _outgoingMsgChar.setValue(messageCharArray);
+}
 
-        static MessageQueue _messageQueue;
+void WithoutNet::resetMessagePointer(BLEDevice central)
+{
+    _messageQueue.moveToStart();
 
-        char* separator = "#";
-        
-        static void moveToNextMsg(BLEDevice central, BLECharacteristic characterstic) {
-            Message message = _messageQueue.getNextMessage();
-            
-            //Write message to outgoing message char
-            char messageCharArray[512];
-            message.toCharArray(messageCharArray); 
-            _outgoingMsgChar.setValue(messageCharArray);
-        }
+    Message message = _messageQueue.getNextMessage();
 
-        static void resetMessagePointer(BLEDevice central) {
-            _messageQueue.moveToStart();
+    // Write message to outgoing message char
+    char messageCharArray[512];
+    message.toCharArray(messageCharArray);
+    _outgoingMsgChar.setValue(messageCharArray);
+}
 
-            Message message = _messageQueue.getNextMessage();
-            
-            //Write message to outgoing message char
-            char messageCharArray[512];
-            message.toCharArray(messageCharArray); 
-            _outgoingMsgChar.setValue(messageCharArray);
-        }
-        
-        /* TODO: This might be removed in the future
-        char* generateMessageUuid() {
-            UUID uuid;
-            uuid.generate();
-            return uuid.toCharArray();  
-        }*/
+/* TODO: This might be removed in the future
+char* generateMessageUuid() {
+    UUID uuid;
+    uuid.generate();
+    return uuid.toCharArray();
+}*/
 
-        static void onIncomingMsgCharWritten(BLEDevice central, BLECharacteristic characterstic) {
-            // Get the char* inside the imchar
-            // Call onIncomingMessageReceived(char* msg)
-            
-            char* messageChar = (char*)characterstic.value();
+void WithoutNet::onIncomingMsgCharWritten(BLEDevice central, BLECharacteristic characterstic)
+{
+    // Get the char* inside the imchar
+    // Call onIncomingMessageReceived(char* msg)
 
-            Message message = Message(messageChar);
+    char *messageChar = (char *)characterstic.value();
 
-            if(message.getType() == ACK) {
-                // TODO: Check if content is a valid message ID
-                _messageQueue.removeMessage(atol(message.getContent()));
-            } else {
-                _incomingMessageHandler(message);
-            }
-        }
+    Message message = Message(messageChar);
 
-        void dequeueMsg(char* msgUuid);
-};
+    if (message.getType() == ACK)
+    {
+        // TODO: Check if content is a valid message ID
+        _messageQueue.removeMessage(atol(message.getContent()));
+    }
+    else
+    {
+        _incomingMessageHandler(message);
+    }
+}
+
+// void WithoutNet::dequeueMsg(char* msgUuid);

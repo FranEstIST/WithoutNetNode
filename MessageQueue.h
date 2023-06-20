@@ -7,7 +7,7 @@
 
 class MessageQueue {
     public:
-        MessageQueue(int maxSize = 50);
+        MessageQueue(int maxSize);
         void addMessage(Message message);
         void moveToStart();
         Message getNextMessage();
