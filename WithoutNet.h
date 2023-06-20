@@ -49,8 +49,11 @@ class WithoutNet {
 
         char* _separator = "#";
 
+        static void onConnected(BLEDevice central);
+        static void onDisconnected(BLEDevice central);
+
         static void moveToNextMsg(BLEDevice central, BLECharacteristic characteristic);
-        static void resetMessagePointer(BLEDevice central);
+        static void resetMessagePointer();
         //char* generateMessageUuid();
         static void onIncomingMsgCharWritten(BLEDevice central, BLECharacteristic characteristic);
         void dequeueMsg(char* msgUuid);

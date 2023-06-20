@@ -32,6 +32,8 @@ int WithoutNet::begin()
         return 0;
     }
 
+    pinMode(LED_BUILTIN, OUTPUT); // initialize the built-in LED pin to indicate when a central is connected
+
     BLE.setLocalName(_localName);
     BLE.setAdvertisedService(_WNService); // Add the service UUID
 
@@ -46,8 +48,8 @@ int WithoutNet::begin()
     _incomingMsgChar.setEventHandler(BLEWritten, onIncomingMsgCharWritten);
     _outgoingMsgChar.setEventHandler(BLERead, moveToNextMsg);
 
-    // BLE.setEventHandler(BLEConnected, ...);
-    BLE.setEventHandler(BLEConnected, resetMessagePointer);
+    BLE.setEventHandler(BLEConnected, onConnected);
+    BLE.setEventHandler(BLEDisconnected, onDisconnected);
 
     BLE.addService(_WNService); // Add the WN Service
 
@@ -87,7 +89,18 @@ void WithoutNet::moveToNextMsg(BLEDevice central, BLECharacteristic charactersti
     _outgoingMsgChar.setValue(messageCharArray);
 }
 
-void WithoutNet::resetMessagePointer(BLEDevice central)
+void WithoutNet::onConnected(BLEDevice central)
+{
+    digitalWrite(LED_BUILTIN, HIGH);
+    resetMessagePointer();
+}
+
+void WithoutNet::onDisconnected(BLEDevice central)
+{
+    digitalWrite(LED_BUILTIN, LOW);
+}
+
+void WithoutNet::resetMessagePointer()
 {
     _messageQueue.moveToStart();
 
