@@ -22,13 +22,14 @@ long messageCounter = 0;
 MessageQueue messageQueue = MessageQueue(50);
 
 char* _separator = "#";
+bool allMessagesRead = false;
 
-int begin(char *uuid, char *localName)
+int begin(char *uuidPrime, char *localNamePrime)
 {
     incomingMessageHandler = nullptr;
 
-    memcpy(localName, localName, strlen(localName) + 1);
-    memcpy(uuid, uuid, strlen(uuid) + 1);
+    memcpy(localName, localNamePrime, strlen(localNamePrime) + 1);
+    memcpy(uuid, uuidPrime, strlen(uuidPrime) + 1);
 
     outgoingMsgChar = BLEStringCharacteristic(OUTGOING_MSG_CHAR_SIMPLE_UUID, BLERead, 120);
     incomingMsgChar = BLEStringCharacteristic(INCOMING_MSG_CHAR_SIMPLE_UUID, BLERead | BLEWrite, 120);
@@ -97,9 +98,9 @@ void send(char *msg, char *destUuid)
     sprintf(idChar, "%d", message.getId());
     Serial.println(idChar);
 
-    MessageQueue testQ = MessageQueue(50);
+    messageQueue.addMessage(message);
 
-    testQ.addMessage(message);
+    messageCounter++;
 
     Serial.print("Message added to the message queue: ");
     Serial.println(fullMessage);
@@ -122,19 +123,24 @@ void setIncomingMessageHandler(IncomingMessageHandler incomingMessageHandler)
 
 void moveToNextMsg(BLEDevice central, BLECharacteristic characterstic)
 {
-    Message message = messageQueue.getNextMessage();
+    if(!allMessagesRead) {
+        Message message = messageQueue.getNextMessage();
 
-    // Write message to outgoing message char
-    char messageCharArray[512];
-    message.toCharArray(messageCharArray);
-    outgoingMsgChar.setValue(messageCharArray);
+        // Write message to outgoing message char
+        char messageCharArray[512];
+        message.toCharArray(messageCharArray);
+        outgoingMsgChar.setValue(messageCharArray);
+    }
+    if(messageQueue.reachedLastMessage()) {
+        allMessagesRead = true;
+    }
 }
 
 void onConnected(BLEDevice central)
 {
     Serial.println("Connected");
     digitalWrite(LED_BUILTIN, HIGH);
-    //resetMessagePointer();
+    resetMessagePointer();
 }
 
 void onDisconnected(BLEDevice central)
@@ -146,6 +152,7 @@ void onDisconnected(BLEDevice central)
 void resetMessagePointer()
 {
     messageQueue.moveToStart();
+    allMessagesRead = false;
 
     Message message = messageQueue.getNextMessage();
 
@@ -153,6 +160,7 @@ void resetMessagePointer()
     char messageCharArray[512];
     message.toCharArray(messageCharArray);
     outgoingMsgChar.setValue(messageCharArray);
+
 }
 
 void onIncomingMsgCharWritten(BLEDevice central, BLECharacteristic characterstic)

@@ -11,7 +11,9 @@ class MessageQueue {
         void addMessage(Message message);
         void moveToStart();
         Message getNextMessage();
+        Message getMessage(long id);
         void removeMessage(long id);
+        bool reachedLastMessage();
     private:
         std::map<long, Message> _messagesById;
         std::map<long, Message>::iterator _messageIterator;

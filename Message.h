@@ -5,21 +5,26 @@ enum MessageType {DATA = 0, ACK = 1};
 
 class Message {
     public:
+        Message();
         Message(char* rawMessage);
         Message(long id, MessageType type, unsigned long timestamp, char* sender, char* receiver, char* content);
+        Message(const Message &message);
         ~Message();
+        Message& operator=(const Message& message);
+
         void toCharArray(char* destCharArray);
 
-        long getId();
-        MessageType getType();
-        char* getSender();
-        char* getReceiver();
-        char* getContent();
+        long getId() const;
+        MessageType getType() const;
+        unsigned long getTimestamp() const;
+        char* getSender() const;
+        char* getReceiver() const;
+        char* getContent() const;
         
     private:
         long _id;
         MessageType _type;
-        long _timestamp;
+        unsigned long _timestamp;
         char* _sender;
         char* _receiver;
         char* _content;

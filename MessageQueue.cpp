@@ -1,5 +1,4 @@
 #include "MessageQueue.h"
-#include "Arduino.h"
 
 MessageQueue::MessageQueue(int maxSize = 50) {
     _maxSize = maxSize;
@@ -8,23 +7,17 @@ MessageQueue::MessageQueue(int maxSize = 50) {
 }
 
 void MessageQueue::addMessage(Message message) {
-    /*if(_messagesById.size() >= 50) {
-        Serial.println("Message queue full");
+    if(_messagesById.size() >= 50) {
         long oldestId = _messagesById.end()->first;
         _messagesById.erase(oldestId);
-    }*/
-    
-    //Serial.println("Message queue not full");
+    }
 
-    //_messagesById.insert(std::make_pair(message.getId(), message));
+    _messagesById.insert(std::make_pair(message.getId(), message));
 
-    //Serial.println(_messagesById. ? "Queue null" : "Queue not null");
-
-    //try {
-        //_messagesById.insert(std::make_pair(message.getId(), message));
-    /*} catch (std::exception e) {
-        Serial.println("Insert into the message queue raised an exception");
-    }*/
+    if(_messagesById.size() == 1) {
+        // TODO: Does it make sense to have the iterator move to the start here?
+        moveToStart();
+    }
 }
 
 void MessageQueue::moveToStart() {
@@ -32,9 +25,21 @@ void MessageQueue::moveToStart() {
 }
 
 Message MessageQueue::getNextMessage() {
-    _messageIterator->second;
+    Message message = _messageIterator->second;
+    if(!reachedLastMessage()) {
+        _messageIterator++;
+    }
+    return message;
 }
 
 void MessageQueue::removeMessage(long id) {
     _messagesById.erase(id);
+}
+
+Message MessageQueue::getMessage(long id) {
+    return _messagesById[id];
+}
+
+bool MessageQueue::reachedLastMessage() {
+    return _messagesById.end()->second.getId() == _messageIterator->second.getId();
 }
