@@ -27,7 +27,7 @@ typedef void (*IncomingMessageHandler)(Message msg);
 
 class WithoutNet {
     public:
-        WithoutNet(char* uuid, char* localName);
+        WithoutNet(char* uuid, char* localName, BLELocalDevice &BLE);
         int begin();
         void send(char* msg, char* destUuid);
         void setMaxPendingMsgs(int size);
@@ -37,6 +37,7 @@ class WithoutNet {
         char _uuid[37];
         char _localName[33];
 
+        BLELocalDevice &_BLE;
         BLEService _WNService;
         static BLEStringCharacteristic _outgoingMsgChar;
         static BLEStringCharacteristic _incomingMsgChar;

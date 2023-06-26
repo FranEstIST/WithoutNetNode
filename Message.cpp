@@ -19,13 +19,13 @@ Message::Message(char* rawMessage) {
 
     // TODO: These mallocs shouldn't be necessary. 
     // These char arrays can be initizialized witht the necessary size.
-    _sender = (char*) malloc(sizeof(sender)/sizeof(char));
-    _receiver = (char*) malloc(sizeof(receiver)/sizeof(char));
-    _content = (char*) malloc(sizeof(content)/sizeof(char));
+    _sender = (char*) malloc((strlen(sender) + 1) * sizeof(char));
+    _receiver = (char*) malloc((strlen(receiver) + 1) * sizeof(char));
+    _content = (char*) malloc((strlen(content) + 1) * sizeof(char));
 
-    memcpy(_sender, sender, sizeof(sender)/sizeof(char));
-    memcpy(_receiver, receiver, sizeof(receiver)/sizeof(char));
-    memcpy(_content, content, sizeof(content)/sizeof(char));
+    memcpy(_sender, sender, strlen(sender) + 1);
+    memcpy(_receiver, receiver, strlen(receiver) + 1);
+    memcpy(_content, content, strlen(content) + 1);
 }
 
 Message::Message(long id, MessageType type, unsigned long timestamp, char* sender, char* receiver, char* content) 
@@ -34,13 +34,13 @@ _type(type),
 _timestamp(timestamp) {
     // TODO: These mallocs shouldn't be necessary. 
     // These char arrays can be initizialized witht the necessary size.
-    _sender = (char*) malloc(sizeof(sender)/sizeof(char));
-    _receiver = (char*) malloc(sizeof(receiver)/sizeof(char));
-    _content = (char*) malloc(sizeof(content)/sizeof(char));
+    _sender = (char*) malloc((strlen(sender) + 1) * sizeof(char));
+    _receiver = (char*) malloc((strlen(receiver) + 1) * sizeof(char));
+    _content = (char*) malloc((strlen(content) + 1) * sizeof(char));
         
-    memcpy(_sender, sender, sizeof(sender)/sizeof(char));
-    memcpy(_receiver, receiver, sizeof(receiver)/sizeof(char));
-    memcpy(_content, content, sizeof(content)/sizeof(char));
+    memcpy(_sender, sender, strlen(sender) + 1);
+    memcpy(_receiver, receiver, strlen(receiver) + 1);
+    memcpy(_content, content, strlen(content) + 1);
 }
 
 Message::~Message() {
@@ -50,8 +50,10 @@ Message::~Message() {
 }
 
 void Message::toCharArray(char* destCharArray) {
+    destCharArray[0] = '\0';
+
     char idStr[8];
-    sprintf(idStr, "%d", _id);
+    sprintf(destCharArray, "%ld", _id);
 
     char typeStr[1];
     sprintf(typeStr, "%d", _type);
