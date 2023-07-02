@@ -7,19 +7,21 @@
 const char* WNSERVICE_SIMPLE_UUID = "b19fbebe-dbd4-11ed-afa1-0242ac120002";
 const char* INCOMING_MSG_CHAR_SIMPLE_UUID = "75c57d2e-7efe-4d7b-af73-e2835f2d48d4";
 const char* OUTGOING_MSG_CHAR_SIMPLE_UUID = "dbe60c86-e91d-11ed-a05b-0242ac120003";
+const char* NODE_UUID_CHAR_UUID = "89954326-56e6-4797-b62f-07ac5c4c3789";
 
 char uuid[37];
 char localName[33];
 
 BLEService WNService(WNSERVICE_SIMPLE_UUID);
 
+BLEStringCharacteristic nodeUuidChar(NODE_UUID_CHAR_UUID, BLERead, 120);
 BLEStringCharacteristic outgoingMsgChar(OUTGOING_MSG_CHAR_SIMPLE_UUID, BLERead, 120);
 BLEStringCharacteristic incomingMsgChar(INCOMING_MSG_CHAR_SIMPLE_UUID, BLERead | BLEWrite, 120);
 
 IncomingMessageHandler incomingMessageHandler;
 
 long messageCounter = 0;
-MessageQueue messageQueue = MessageQueue(50);
+MessageQueue messageQueue = MessageQueue(10);
 
 char* _separator = "#";
 bool allMessagesRead = false;
@@ -31,8 +33,9 @@ int begin(char *uuidPrime, char *localNamePrime)
     memcpy(localName, localNamePrime, strlen(localNamePrime) + 1);
     memcpy(uuid, uuidPrime, strlen(uuidPrime) + 1);
 
-    outgoingMsgChar = BLEStringCharacteristic(OUTGOING_MSG_CHAR_SIMPLE_UUID, BLERead, 120);
-    incomingMsgChar = BLEStringCharacteristic(INCOMING_MSG_CHAR_SIMPLE_UUID, BLERead | BLEWrite, 120);
+    /*nodeUuidChar = BLEStringCharacteristic(NODE_UUID_CHAR_UUID, BLERead | BLEWrite, 120);
+    outgoingMsgChar = BLEStringCharacteristic(OUTGOING_MSG_CHAR_SIMPLE_UUID, BLERead | BLEWrite, 120);
+    incomingMsgChar = BLEStringCharacteristic(INCOMING_MSG_CHAR_SIMPLE_UUID, BLERead | BLEWrite, 120);*/
 
     // Begin initialization
     if (!BLE.begin())
@@ -53,6 +56,9 @@ int begin(char *uuidPrime, char *localNamePrime)
     BLE.setLocalName(localName);
     BLE.setAdvertisedService(WNService); // Add the service UUID
 
+    // Add the node uuid characteristic 
+    WNService.addCharacteristic(nodeUuidChar);
+
     // Add the outgoing message characteristic (where messages sent from this
     // device are written to)
     WNService.addCharacteristic(outgoingMsgChar);
@@ -61,6 +67,9 @@ int begin(char *uuidPrime, char *localNamePrime)
     // device are written to)
     WNService.addCharacteristic(incomingMsgChar);
 
+    //WNService.hasCharacteristic()
+
+    nodeUuidChar.writeValue(uuid);
     outgoingMsgChar.writeValue("");
     incomingMsgChar.writeValue("");
 
@@ -130,7 +139,10 @@ void moveToNextMsg(BLEDevice central, BLECharacteristic characterstic)
         char messageCharArray[512];
         message.toCharArray(messageCharArray);
         outgoingMsgChar.setValue(messageCharArray);
+    } else {
+        outgoingMsgChar.setValue("");
     }
+
     if(messageQueue.reachedLastMessage()) {
         allMessagesRead = true;
     }
