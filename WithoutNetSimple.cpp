@@ -138,9 +138,15 @@ void moveToNextMsg(BLEDevice central, BLECharacteristic characterstic)
         // Write message to outgoing message char
         char messageCharArray[512];
         message.toCharArray(messageCharArray);
-        outgoingMsgChar.setValue(messageCharArray);
+
+        Serial.print("Next message in Outgoing Msg Char: ");
+        Serial.println(messageCharArray);
+
+        outgoingMsgChar.writeValue(messageCharArray);
     } else {
-        outgoingMsgChar.setValue("");
+        Serial.println("Sending end message...");
+
+        outgoingMsgChar.writeValue("0");
     }
 
     if(messageQueue.reachedLastMessage()) {

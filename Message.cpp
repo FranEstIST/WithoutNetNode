@@ -8,7 +8,7 @@ Message::Message()
 : _id(0),
 _type(DATA),
 _timestamp(0) {
-    std::cout << "Allocating ()...\n";
+    // std::cout << "Allocating ()...\n";
 
     // TODO: These mallocs shouldn't be necessary. 
     // These char arrays can be initizialized witht the necessary size.
@@ -53,7 +53,7 @@ Message::Message(long id, MessageType type, unsigned long timestamp, char* sende
 _type(type),
 _timestamp(timestamp) {
 
-    std::cout << "Allocating (long id, MessageType type, unsigned long timestamp, char* sender, char* receiver, char* content)...\n";
+    // std::cout << "Allocating (long id, MessageType type, unsigned long timestamp, char* sender, char* receiver, char* content)...\n";
 
     // TODO: These mallocs shouldn't be necessary. 
     // These char arrays can be initizialized witht the necessary size.
@@ -83,7 +83,7 @@ _timestamp(message.getTimestamp()) {
     char* receiver = message.getReceiver();
     char* content = message.getContent();
 
-    std::cout << "Allocating (const Message &message)...\n";
+    // std::cout << "Allocating (const Message &message)...\n";
 
     // TODO: These mallocs shouldn't be necessary. 
     // These char arrays can be initizialized witht the necessary size.
@@ -97,7 +97,7 @@ _timestamp(message.getTimestamp()) {
 }
 
 Message::~Message() {
-    std::cout << "Freeing...\n";
+    // std::cout << "Freeing...\n";
     free(_sender);
     free(_receiver);
     free(_content);
