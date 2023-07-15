@@ -43,3 +43,7 @@ Message MessageQueue::getMessage(long id) {
 bool MessageQueue::reachedLastMessage() {
     return _messagesById.end()->second.getId() == _messageIterator->second.getId();
 }
+
+bool MessageQueue::isEmpty() {
+    return _messagesById.empty();
+}

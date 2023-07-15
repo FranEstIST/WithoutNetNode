@@ -14,6 +14,7 @@ class MessageQueue {
         Message getMessage(long id);
         void removeMessage(long id);
         bool reachedLastMessage();
+        bool isEmpty();
     private:
         std::map<long, Message> _messagesById;
         std::map<long, Message>::iterator _messageIterator;

@@ -15,8 +15,8 @@ char localName[33];
 BLEService WNService(WNSERVICE_SIMPLE_UUID);
 
 BLEStringCharacteristic nodeUuidChar(NODE_UUID_CHAR_UUID, BLERead, 120);
-BLEStringCharacteristic outgoingMsgChar(OUTGOING_MSG_CHAR_SIMPLE_UUID, BLERead, 120);
-BLEStringCharacteristic incomingMsgChar(INCOMING_MSG_CHAR_SIMPLE_UUID, BLERead | BLEWrite, 120);
+BLEStringCharacteristic outgoingMsgChar(OUTGOING_MSG_CHAR_SIMPLE_UUID, BLERead, 512);
+BLEStringCharacteristic incomingMsgChar(INCOMING_MSG_CHAR_SIMPLE_UUID, BLERead | BLEWrite, 512);
 
 IncomingMessageHandler incomingMessageHandler;
 
@@ -70,8 +70,8 @@ int begin(char *uuidPrime, char *localNamePrime)
     //WNService.hasCharacteristic()
 
     nodeUuidChar.writeValue(uuid);
-    outgoingMsgChar.writeValue("");
-    incomingMsgChar.writeValue("");
+    outgoingMsgChar.writeValue("0");
+    incomingMsgChar.writeValue("0");
 
     incomingMsgChar.setEventHandler(BLEWritten, onIncomingMsgCharWritten);
     outgoingMsgChar.setEventHandler(BLERead, moveToNextMsg);
@@ -132,7 +132,7 @@ void setIncomingMessageHandler(IncomingMessageHandler incomingMessageHandler)
 
 void moveToNextMsg(BLEDevice central, BLECharacteristic characterstic)
 {
-    if(!allMessagesRead) {
+    /*if(!allMessagesRead) {
         Message message = messageQueue.getNextMessage();
 
         // Write message to outgoing message char
@@ -149,9 +149,12 @@ void moveToNextMsg(BLEDevice central, BLECharacteristic characterstic)
         outgoingMsgChar.writeValue("0");
     }
 
+    // TODO: Should it be checked if the message queue
+    // is empty here?
     if(messageQueue.reachedLastMessage()) {
         allMessagesRead = true;
-    }
+    }*/
+    writeNextMessage();
 }
 
 void onConnected(BLEDevice central)
@@ -169,16 +172,47 @@ void onDisconnected(BLEDevice central)
 
 void resetMessagePointer()
 {
-    messageQueue.moveToStart();
-    allMessagesRead = false;
+    if(messageQueue.isEmpty()) {
+        allMessagesRead = true;
+    } else {
+        messageQueue.moveToStart();
+        allMessagesRead = false;
+        writeNextMessage();
+    }
+    
 
-    Message message = messageQueue.getNextMessage();
+    /*Message message = messageQueue.getNextMessage();
 
     // Write message to outgoing message char
     char messageCharArray[512];
     message.toCharArray(messageCharArray);
-    outgoingMsgChar.setValue(messageCharArray);
+    outgoingMsgChar.setValue(messageCharArray);*/
 
+}
+
+void writeNextMessage() {
+    if(!allMessagesRead) {
+        Message message = messageQueue.getNextMessage();
+
+        // Write message to outgoing message char
+        char messageCharArray[512];
+        message.toCharArray(messageCharArray);
+
+        Serial.print("Next message in Outgoing Msg Char: ");
+        Serial.println(messageCharArray);
+
+        outgoingMsgChar.writeValue(messageCharArray);
+    } else {
+        Serial.println("Sending end message...");
+
+        outgoingMsgChar.writeValue("0");
+    }
+
+    // TODO: Should it be checked if the message queue
+    // is empty here?
+    if(messageQueue.reachedLastMessage()) {
+        allMessagesRead = true;
+    }
 }
 
 void onIncomingMsgCharWritten(BLEDevice central, BLECharacteristic characterstic)
@@ -186,9 +220,19 @@ void onIncomingMsgCharWritten(BLEDevice central, BLECharacteristic characterstic
     // Get the char* inside the imchar
     // Call onIncomingMessageReceived(char* msg)
 
+    //characterstic.value();
+
+    Serial.println("Message received");
+
     char *messageChar = (char *)characterstic.value();
 
-    Message message = Message(messageChar);
+    Serial.print("Message: ");
+    Serial.println(messageChar);
+
+    Serial.print("Characteristic size: ");
+    Serial.println(characterstic.valueSize());
+
+    /*Message message = Message(messageChar);
 
     if (message.getType() == ACK)
     {
@@ -198,5 +242,5 @@ void onIncomingMsgCharWritten(BLEDevice central, BLECharacteristic characterstic
     else
     {
         incomingMessageHandler(message);
-    }
+    }*/
 }

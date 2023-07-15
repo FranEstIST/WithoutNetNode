@@ -21,6 +21,8 @@ static void onDisconnected(BLEDevice central);
 static void moveToNextMsg(BLEDevice central, BLECharacteristic characteristic);
 static void resetMessagePointer();
 
+static void writeNextMessage();
+
 static void onIncomingMsgCharWritten(BLEDevice central, BLECharacteristic characteristic);
 void dequeueMsg(char* msgUuid);
 
