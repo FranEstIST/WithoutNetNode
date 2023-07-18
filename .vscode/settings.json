@@ -51,5 +51,6 @@
         "ostream": "cpp",
         "streambuf": "cpp",
         "cwctype": "cpp"
-    }
+    },
+    "C_Cpp.errorSquiggles": "enabled"
 }

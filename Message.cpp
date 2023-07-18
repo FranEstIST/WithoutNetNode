@@ -3,113 +3,112 @@
 #include <cstdlib>
 #include <string.h>
 #include <iostream>
+#include <bitset>
+#include <cstddef>
 
 Message::Message()
-: _id(0),
+: _length(0),
 _type(DATA),
 _timestamp(0) {
-    // std::cout << "Allocating ()...\n";
-
-    // TODO: These mallocs shouldn't be necessary. 
-    // These char arrays can be initizialized witht the necessary size.
-    _sender = (char*) malloc(sizeof(char));
-    _receiver = (char*) malloc(sizeof(char));
-    _content = (char*) malloc(sizeof(char));
-        
-    memcpy(_sender, "", 1);
-    memcpy(_receiver, "", 1);
-    memcpy(_content, "", 1);
+    std::cout << "Allocating ()...\n";
+    _payload = (byte*) malloc(sizeof(byte));
 }
+
+Message::Message(byte* rawMessage) {
+    // TODO: Check if this makes sense
+    byte* lengthPtr = rawMessage;
+    byte* timestampPtr = lengthPtr + sizeof(short);
+    byte* typePtr = timestampPtr + sizeof(unsigned long);
+    byte* senderPtr = typePtr + 1;
+    byte* receiverPtr = senderPtr + sizeof(int);
+    byte* payloadPtr = receiverPtr + sizeof(int);
+
+    memcpy(&_length, lengthPtr, sizeof(short));
+    memcpy(&_timestamp, timestampPtr, sizeof(unsigned long));
+
+    memcpy(&_type, typePtr, 1);
+    _type >> 8*(sizeof(MessageType) - 1);
+
+    memcpy(&_sender, senderPtr, sizeof(int));
+    memcpy(&_receiver, receiverPtr, sizeof(int));
+
+    size_t payloadSize = _length - (sizeof(_timestamp) + 1 + sizeof(_sender) + sizeof(_receiver));
+    _payload = (byte*) malloc(payloadSize);
+    memcpy(_payload, payloadPtr, payloadSize);
+}   
 
 Message::Message(char* rawMessage) {
     // TODO: Split message into the different fields
     // 8 byte | 1 byte | 8 byte | 16 byte | 16 byte | 463 byte ?
-    char* idChar = strtok(rawMessage, "#");
+    char* lengthChar = strtok(rawMessage, "#");
     char* typeChar = strtok(NULL, "#");
     char* timestampChar = strtok(NULL, "#");
-    char* sender = strtok(NULL, "#");
-    char* receiver = strtok(NULL, "#");
-    char* content = strtok(NULL, "#");
+    char* senderChar = strtok(NULL, "#");
+    char* receiverChar = strtok(NULL, "#");
+    char* payloadChar = strtok(NULL, "#");
 
-    memcpy(&_id, idChar, sizeof(long));
+    std::string lengthString(lengthChar);
+    _length = (short) std::stoi(lengthChar);
+    _type = (MessageType) std::stoi(typeChar);
+    _timestamp = std::stol(timestampChar);
+    _sender = std::stoi(senderChar);
+    _receiver = std::stoi(receiverChar);
+
+    // TODO: These memcpys are wrong
+    /*memcpy(&_length, lengthChar, sizeof(short));
     memcpy(&_type, typeChar, sizeof(MessageType));
     memcpy(&_timestamp, timestampChar, sizeof(unsigned long));
+    memcpy(&_sender, sender, strlen(sender) + 1);
+    memcpy(&_receiver, receiver, strlen(receiver) + 1);*/
 
     std::cout << "Allocating (char* rawMessage)...\n";
 
-    // TODO: These mallocs shouldn't be necessary. 
-    // These char arrays can be initizialized witht the necessary size.
-    _sender = (char*) malloc((strlen(sender) + 1) * sizeof(char));
-    _receiver = (char*) malloc((strlen(receiver) + 1) * sizeof(char));
-    _content = (char*) malloc((strlen(content) + 1) * sizeof(char));
-
-    memcpy(_sender, sender, strlen(sender) + 1);
-    memcpy(_receiver, receiver, strlen(receiver) + 1);
-    memcpy(_content, content, strlen(content) + 1);
+    size_t payloadSize = _length - (sizeof(_timestamp) + 1 + sizeof(_sender) + sizeof(_receiver));
+    _payload = (byte*) malloc(payloadSize);
+    memcpy(_payload, payloadChar, payloadSize);
 }
 
-Message::Message(long id, MessageType type, unsigned long timestamp, char* sender, char* receiver, char* content) 
-: _id(id),
+Message::Message(unsigned long timestamp, MessageType type, int sender, int receiver, byte* payload, short payloadLength) 
+: _timestamp(timestamp),
 _type(type),
-_timestamp(timestamp) {
+_sender(sender),
+_receiver(receiver) {
 
-    // std::cout << "Allocating (long id, MessageType type, unsigned long timestamp, char* sender, char* receiver, char* content)...\n";
+    std::cout << "Allocating (unsigned long timestamp, MessageType type, int sender, int receiver, byte* payload, short payloadLength)...\n";
 
-    // TODO: These mallocs shouldn't be necessary. 
-    // These char arrays can be initizialized witht the necessary size.
-    _sender = (char*) malloc((strlen(sender) + 1) * sizeof(char));
-    _receiver = (char*) malloc((strlen(receiver) + 1) * sizeof(char));
-    _content = (char*) malloc((strlen(content) + 1) * sizeof(char));
-        
-    memcpy(_sender, sender, strlen(sender) + 1);
-    memcpy(_receiver, receiver, strlen(receiver) + 1);
-    memcpy(_content, content, strlen(content) + 1);
+    _length = payloadLength + sizeof(_timestamp) + 1 + sizeof(_sender) + sizeof(_receiver);
+
+    _payload = (byte*) malloc(payloadLength);
+    memcpy(_payload, payload, payloadLength);
 }
-
-/*Message::Message(Message &message) {
-    Message(message.getId(),
-     message.getType(),
-      message.getTimestamp(),
-       message.getSender(),
-        message.getReceiver(),
-         message.getContent());
-}*/
 
 Message::Message(const Message &message)
-: _id(message.getId()),
+:_length(message.getLength()),
+_timestamp(message.getTimestamp()),
 _type(message.getType()),
-_timestamp(message.getTimestamp()) {
-    char* sender = message.getSender();
-    char* receiver = message.getReceiver();
-    char* content = message.getContent();
+_sender(message.getSender()),
+_receiver(message.getReceiver())
+ {
+    byte* payload = message.getPayload();
 
-    // std::cout << "Allocating (const Message &message)...\n";
+    std::cout << "Allocating (const Message &message)...\n";
 
-    // TODO: These mallocs shouldn't be necessary. 
-    // These char arrays can be initizialized witht the necessary size.
-    _sender = (char*) malloc((strlen(sender) + 1) * sizeof(char));
-    _receiver = (char*) malloc((strlen(receiver) + 1) * sizeof(char));
-    _content = (char*) malloc((strlen(content) + 1) * sizeof(char));
-        
-    memcpy(_sender, sender, strlen(sender) + 1);
-    memcpy(_receiver, receiver, strlen(receiver) + 1);
-    memcpy(_content, content, strlen(content) + 1);
+    size_t payloadSize = _length - (sizeof(_timestamp) + 1 + sizeof(_sender) + sizeof(_receiver));
+    _payload = (byte*) malloc(payloadSize);
+    memcpy(_payload, payload, payloadSize);
 }
 
 Message::~Message() {
     // std::cout << "Freeing...\n";
-    free(_sender);
-    free(_receiver);
-    free(_content);
+    free(_payload);
 }
 
 Message& Message::operator=(const Message& message) {
-    _id = message.getId();
-    _type = message.getType();
+    _length = message.getLength();
     _timestamp = message.getTimestamp();
     _sender = message.getSender();
     _receiver = message.getReceiver();
-    _content = message.getContent();
+    _payload = message.getPayload();
 
     /*char* sender = message.getSender();
     char* receiver = message.getReceiver();
@@ -130,13 +129,34 @@ Message& Message::operator=(const Message& message) {
     return *this;
 }
 
+void Message::toByteArray(byte* destByteArray) {
+    // TODO: Check if this makes sense
+    byte* lengthPtr = destByteArray;
+    byte* timestampPtr = lengthPtr + sizeof(short);
+    byte* typePtr = timestampPtr + sizeof(unsigned long);
+    byte* senderPtr = typePtr + 1;
+    byte* receiverPtr = senderPtr + sizeof(int);
+    byte* payloadPtr = receiverPtr + sizeof(int);
 
+    memcpy(lengthPtr, &_length, sizeof(short));
+    memcpy(timestampPtr, &_timestamp, sizeof(unsigned long));
+
+    memcpy(typePtr, &_type, sizeof(MessageType));
+    *(typePtr) << 8*(sizeof(MessageType) - 1);
+
+    memcpy(senderPtr, &_sender, sizeof(int));
+    memcpy(receiverPtr, &_receiver, sizeof(int));
+
+    size_t payloadSize = _length - (sizeof(_timestamp) + 1 + sizeof(_sender) + sizeof(_receiver));
+    _payload = (byte*) malloc(payloadSize);
+    memcpy(payloadPtr, &_payload, payloadSize);
+}
 
 void Message::toCharArray(char* destCharArray) {
     destCharArray[0] = '\0';
 
     //char idStr[12];
-    sprintf(destCharArray, "%ld", _id);
+    sprintf(destCharArray, "%d", _length);
 
     char typeStr[2];
     sprintf(typeStr, "%d", _type);
@@ -144,39 +164,51 @@ void Message::toCharArray(char* destCharArray) {
     char timestampStr[12];
     sprintf(timestampStr, "%lu", _timestamp);
 
+    char senderStr[12];
+    sprintf(senderStr, "%d", _sender);
+
+    char receiverStr[12];
+    sprintf(receiverStr, "%d", _receiver);
+
+    char payloadStr[512];
+    int payloadInt = 0;
+    size_t payloadSize = _length - (sizeof(_timestamp) + 1 + sizeof(_sender) + sizeof(_receiver));
+    memcpy(&payloadInt, _payload, payloadSize < sizeof(int) ? payloadSize : sizeof(int));
+    sprintf(payloadStr, "%d", payloadInt);
+
     //strcat(destCharArray, idStr);
     strcat(destCharArray, "#");
     strcat(destCharArray, typeStr);
     strcat(destCharArray, "#");
     strcat(destCharArray, timestampStr);
     strcat(destCharArray, "#");
-    strcat(destCharArray, _sender);
+    strcat(destCharArray, senderStr);
     strcat(destCharArray, "#");
-    strcat(destCharArray, _receiver);
+    strcat(destCharArray, receiverStr);
     strcat(destCharArray, "#");
-    strcat(destCharArray, _content);
+    strcat(destCharArray, payloadStr);
 }
 
-long Message::getId() const {
-    return _id;
-}
-
-MessageType Message::getType() const {
-    return _type;
+short Message::getLength() const {
+    return _length;
 }
 
 unsigned long Message::getTimestamp() const {
     return _timestamp;
 }
 
-char* Message::getSender() const {
+MessageType Message::getType() const {
+    return _type;
+}
+
+int Message::getSender() const {
     return _sender;
 }
 
-char* Message::getReceiver() const {
+int Message::getReceiver() const {
     return _receiver;
 }
 
-char* Message::getContent() const {
-    return _content;
+byte* Message::getPayload() const {
+    return _payload;
 }

@@ -12,11 +12,13 @@ const char* NODE_UUID_CHAR_UUID = "89954326-56e6-4797-b62f-07ac5c4c3789";
 char uuid[37];
 char localName[33];
 
+int id;
+
 BLEService WNService(WNSERVICE_SIMPLE_UUID);
 
-BLEStringCharacteristic nodeUuidChar(NODE_UUID_CHAR_UUID, BLERead, 120);
-BLEStringCharacteristic outgoingMsgChar(OUTGOING_MSG_CHAR_SIMPLE_UUID, BLERead, 512);
-BLEStringCharacteristic incomingMsgChar(INCOMING_MSG_CHAR_SIMPLE_UUID, BLERead | BLEWrite, 512);
+BLEIntCharacteristic nodeUuidChar(NODE_UUID_CHAR_UUID, BLERead);
+BLECharacteristic outgoingMsgChar(OUTGOING_MSG_CHAR_SIMPLE_UUID, BLERead, 512);
+BLECharacteristic incomingMsgChar(INCOMING_MSG_CHAR_SIMPLE_UUID, BLERead | BLEWrite, 512);
 
 IncomingMessageHandler incomingMessageHandler;
 
@@ -26,16 +28,13 @@ MessageQueue messageQueue = MessageQueue(10);
 char* _separator = "#";
 bool allMessagesRead = false;
 
-int begin(char *uuidPrime, char *localNamePrime)
+int begin(int idPrime, char *localNamePrime)
 {
     incomingMessageHandler = nullptr;
 
     memcpy(localName, localNamePrime, strlen(localNamePrime) + 1);
-    memcpy(uuid, uuidPrime, strlen(uuidPrime) + 1);
 
-    /*nodeUuidChar = BLEStringCharacteristic(NODE_UUID_CHAR_UUID, BLERead | BLEWrite, 120);
-    outgoingMsgChar = BLEStringCharacteristic(OUTGOING_MSG_CHAR_SIMPLE_UUID, BLERead | BLEWrite, 120);
-    incomingMsgChar = BLEStringCharacteristic(INCOMING_MSG_CHAR_SIMPLE_UUID, BLERead | BLEWrite, 120);*/
+    id = idPrime;
 
     // Begin initialization
     if (!BLE.begin())
@@ -45,8 +44,8 @@ int begin(char *uuidPrime, char *localNamePrime)
 
     // TODO: Check if serial has been initialized before printing
 
-    Serial.print("UUID: ");
-    Serial.println(uuid);
+    Serial.print("ID: ");
+    Serial.println(id);
 
     Serial.print("Local name: ");
     Serial.println(localName);
@@ -69,7 +68,7 @@ int begin(char *uuidPrime, char *localNamePrime)
 
     //WNService.hasCharacteristic()
 
-    nodeUuidChar.writeValue(uuid);
+    nodeUuidChar.writeValue(id);
     outgoingMsgChar.writeValue("0");
     incomingMsgChar.writeValue("0");
 
@@ -90,22 +89,35 @@ void runLoop() {
     BLEDevice central = BLE.central();
 }
 
-void send(char *msg, char *destUuid)
+void sendInt(int msg, int destId)
 {
     Serial.print("Message to be added to the message queue: ");
     Serial.println(msg);
+
+    short payloadLength = sizeof(int);
+    byte* payload = (byte*) &msg;
     
-    Message message = Message(messageCounter, (MessageType)DATA, millis(), uuid, destUuid, msg);
+    addMessageToQueue(payload, payloadLength, destId);
+}
+
+void sendString(char* msg, int destId)
+{
+    Serial.print("Message to be added to the message queue: ");
+    Serial.println(msg);
+
+    short payloadLength = strlen(msg) + 1;
+    byte* payload = (byte*) &msg;
+    
+    addMessageToQueue(payload, payloadLength, destId);
+}
+
+void addMessageToQueue(byte* payload, short payloadLength, int destId) {
+    Message message = Message(millis(), (MessageType)DATA, id, destId, payload, payloadLength);
 
     char fullMessage[512];
     message.toCharArray(fullMessage);
     Serial.print("Full message to be added to the message queue: ");
     Serial.println(fullMessage);
-
-    Serial.print("Message id: ");
-    char idChar[12];
-    sprintf(idChar, "%d", message.getId());
-    Serial.println(idChar);
 
     messageQueue.addMessage(message);
 
@@ -201,7 +213,12 @@ void writeNextMessage() {
         Serial.print("Next message in Outgoing Msg Char: ");
         Serial.println(messageCharArray);
 
-        outgoingMsgChar.writeValue(messageCharArray);
+        byte messageByteArray[512];
+        message.toByteArray(messageByteArray);
+
+        //outgoingMsgChar.setValue(messageByteArray, 512);
+
+        outgoingMsgChar.writeValue(messageByteArray, 512);
     } else {
         Serial.println("Sending end message...");
 

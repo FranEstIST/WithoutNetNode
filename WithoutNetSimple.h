@@ -8,9 +8,11 @@
 
 typedef void (*IncomingMessageHandler)(Message msg);
 
-int begin(char *uuid, char *localName);
+int begin(int id, char *localName);
 void runLoop();
-void send(char* msg, char* destUuid);
+void sendInt(int msg, int destId);
+void sendChar(char* msg, char* destUuid);
+void addMessageToQueue(byte* payload, short payloadLength, int destId);
 void setMaxPendingMsgs(int size);
 void getPendingMsgNum();
 void setIncomingMessageHandler(IncomingMessageHandler handler);

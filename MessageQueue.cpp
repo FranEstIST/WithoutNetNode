@@ -2,7 +2,7 @@
 
 MessageQueue::MessageQueue(int maxSize = 50) {
     _maxSize = maxSize;
-    _messagesById = std::map<long, Message>();
+    _messagesById = std::map<unsigned long, Message>();
     moveToStart();
 }
 
@@ -12,7 +12,7 @@ void MessageQueue::addMessage(Message message) {
         _messagesById.erase(oldestId);
     }
 
-    _messagesById.insert(std::make_pair(message.getId(), message));
+    _messagesById.insert(std::make_pair(message.getTimestamp(), message));
 
     if(_messagesById.size() == 1) {
         // TODO: Does it make sense to have the iterator move to the start here?
@@ -32,16 +32,16 @@ Message MessageQueue::getNextMessage() {
     return message;
 }
 
-void MessageQueue::removeMessage(long id) {
+void MessageQueue::removeMessage(unsigned long id) {
     _messagesById.erase(id);
 }
 
-Message MessageQueue::getMessage(long id) {
+Message MessageQueue::getMessage(unsigned long id) {
     return _messagesById[id];
 }
 
 bool MessageQueue::reachedLastMessage() {
-    return _messagesById.end()->second.getId() == _messageIterator->second.getId();
+    return _messagesById.end()->second.getTimestamp() == _messageIterator->second.getTimestamp();
 }
 
 bool MessageQueue::isEmpty() {

@@ -11,13 +11,13 @@ class MessageQueue {
         void addMessage(Message message);
         void moveToStart();
         Message getNextMessage();
-        Message getMessage(long id);
-        void removeMessage(long id);
+        Message getMessage(unsigned long id);
+        void removeMessage(unsigned long id);
         bool reachedLastMessage();
         bool isEmpty();
     private:
-        std::map<long, Message> _messagesById;
-        std::map<long, Message>::iterator _messageIterator;
+        std::map<unsigned long, Message> _messagesById;
+        std::map<unsigned long, Message>::iterator _messageIterator;
         int _maxSize;
 };
 

@@ -1,5 +1,9 @@
+#include <cstdlib>
+
 #ifndef MESSAGE_H
 #define MESSAGE_H
+
+typedef unsigned char byte;
 
 enum MessageType {DATA = 0, ACK = 1};
 
@@ -7,27 +11,29 @@ class Message {
     public:
         Message();
         Message(char* rawMessage);
-        Message(long id, MessageType type, unsigned long timestamp, char* sender, char* receiver, char* content);
+        Message(byte* rawMessage);
+        Message(unsigned long timestamp, MessageType type, int sender, int receiver, byte* payload, short payloadLength);
         Message(const Message &message);
         ~Message();
         Message& operator=(const Message& message);
 
+        void toByteArray(byte* destByteArray);
         void toCharArray(char* destCharArray);
 
-        long getId() const;
-        MessageType getType() const;
+        short getLength() const;
         unsigned long getTimestamp() const;
-        char* getSender() const;
-        char* getReceiver() const;
-        char* getContent() const;
+        MessageType getType() const;
+        int getSender() const;
+        int getReceiver() const;
+        byte* getPayload() const;
         
     private:
-        long _id;
-        MessageType _type;
+        short _length;
         unsigned long _timestamp;
-        char* _sender;
-        char* _receiver;
-        char* _content;
+        MessageType _type;
+        int _sender;
+        int _receiver;
+        byte* _payload;
 };
 
 #endif
