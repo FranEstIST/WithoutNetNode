@@ -17,8 +17,8 @@ int id;
 BLEService WNService(WNSERVICE_SIMPLE_UUID);
 
 BLEIntCharacteristic nodeUuidChar(NODE_UUID_CHAR_UUID, BLERead);
-BLECharacteristic outgoingMsgChar(OUTGOING_MSG_CHAR_SIMPLE_UUID, BLERead, 512);
-BLECharacteristic incomingMsgChar(INCOMING_MSG_CHAR_SIMPLE_UUID, BLERead | BLEWrite, 512);
+BLECharacteristic outgoingMsgChar(OUTGOING_MSG_CHAR_SIMPLE_UUID, BLERead, 20);
+BLECharacteristic incomingMsgChar(INCOMING_MSG_CHAR_SIMPLE_UUID, BLERead | BLEWrite, 20);
 
 IncomingMessageHandler incomingMessageHandler;
 
@@ -125,6 +125,10 @@ void addMessageToQueue(byte* payload, short payloadLength, int destId) {
 
     Serial.print("Message added to the message queue: ");
     Serial.println(fullMessage);
+
+    byte messageByteArray[512];
+    message.toByteArray(messageByteArray);
+    printByteArray(messageByteArray, 20);
 }
 
 void setMaxPendingMsgs(int size)
@@ -216,19 +220,31 @@ void writeNextMessage() {
         byte messageByteArray[512];
         message.toByteArray(messageByteArray);
 
+        printByteArray(messageByteArray, 20);
+
         //outgoingMsgChar.setValue(messageByteArray, 512);
 
         outgoingMsgChar.writeValue(messageByteArray, 512);
     } else {
         Serial.println("Sending end message...");
 
-        outgoingMsgChar.writeValue("0");
+        outgoingMsgChar.writeValue((byte)0x00);
     }
 
     // TODO: Should it be checked if the message queue
     // is empty here?
     if(messageQueue.reachedLastMessage()) {
         allMessagesRead = true;
+    }
+}
+
+void printByteArray(byte* byteArray, int size) {
+    Serial.println("Byte array: ");
+    for(int i = 0; i < size; i++) {
+        Serial.print("Index ");
+        Serial.print(i);
+        Serial.print(": ");
+        Serial.println((int) byteArray[i]);
     }
 }
 

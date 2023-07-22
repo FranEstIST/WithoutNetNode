@@ -5,6 +5,7 @@
 #include <iostream>
 #include <bitset>
 #include <cstddef>
+#include <Arduino.h>
 
 Message::Message()
 : _length(0),
@@ -78,6 +79,15 @@ _receiver(receiver) {
 
     _length = payloadLength + sizeof(_timestamp) + 1 + sizeof(_sender) + sizeof(_receiver);
 
+    Serial.print("Payload length: ");
+    Serial.println(payloadLength);
+    Serial.print("Timestamp length: ");
+    Serial.println(sizeof(_timestamp));
+    Serial.print("Sender length: ");
+    Serial.println(sizeof(_sender));
+    Serial.print("Receiver length: ");
+    Serial.println(sizeof(_receiver));
+
     _payload = (byte*) malloc(payloadLength);
     memcpy(_payload, payload, payloadLength);
 }
@@ -130,6 +140,8 @@ Message& Message::operator=(const Message& message) {
 }
 
 void Message::toByteArray(byte* destByteArray) {
+    size_t payloadSize = _length - (sizeof(_timestamp) + 1 + sizeof(_sender) + sizeof(_receiver));
+
     // TODO: Check if this makes sense
     byte* lengthPtr = destByteArray;
     byte* timestampPtr = lengthPtr + sizeof(short);
@@ -137,6 +149,7 @@ void Message::toByteArray(byte* destByteArray) {
     byte* senderPtr = typePtr + 1;
     byte* receiverPtr = senderPtr + sizeof(int);
     byte* payloadPtr = receiverPtr + sizeof(int);
+    byte* endPtr = payloadPtr + payloadSize;
 
     memcpy(lengthPtr, &_length, sizeof(short));
     memcpy(timestampPtr, &_timestamp, sizeof(unsigned long));
@@ -147,9 +160,10 @@ void Message::toByteArray(byte* destByteArray) {
     memcpy(senderPtr, &_sender, sizeof(int));
     memcpy(receiverPtr, &_receiver, sizeof(int));
 
-    size_t payloadSize = _length - (sizeof(_timestamp) + 1 + sizeof(_sender) + sizeof(_receiver));
     _payload = (byte*) malloc(payloadSize);
     memcpy(payloadPtr, &_payload, payloadSize);
+
+    memcpy(endPtr, "", 1);
 }
 
 void Message::toCharArray(char* destCharArray) {
