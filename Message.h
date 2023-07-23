@@ -1,6 +1,8 @@
 #ifndef MESSAGE_H
 #define MESSAGE_H
 
+#include <cstdlib>
+
 typedef unsigned char byte;
 
 enum MessageType {DATA = 0, ACK = 1};
@@ -16,6 +18,7 @@ class Message {
         Message& operator=(const Message& message);
 
         void toByteArray(byte* destByteArray);
+        static void copyAndReverseEndianness(byte* dst, byte* src, size_t size);
         void toCharArray(char* destCharArray);
 
         short getLength() const;

@@ -96,6 +96,8 @@ void sendInt(int msg, int destId)
 
     short payloadLength = sizeof(int);
     byte* payload = (byte*) &msg;
+    /*byte payload[sizeof(int)];
+    Message::copyAndReverseEndianness(payload, (byte*) &msg, sizeof(int));*/
     
     addMessageToQueue(payload, payloadLength, destId);
 }
@@ -229,6 +231,10 @@ void writeNextMessage() {
         Serial.println("Sending end message...");
 
         outgoingMsgChar.writeValue((byte)0x00);
+
+        byte* byteArray = (byte*) outgoingMsgChar.value();
+
+        printByteArray(byteArray, 1);
     }
 
     // TODO: Should it be checked if the message queue
