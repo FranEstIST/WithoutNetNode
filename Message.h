@@ -27,6 +27,7 @@ class Message {
         int getSender() const;
         int getReceiver() const;
         byte* getPayload() const;
+        int getPayloadAsInt() const;
         
     private:
         short _length;

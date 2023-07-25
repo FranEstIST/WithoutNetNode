@@ -130,7 +130,7 @@ void addMessageToQueue(byte* payload, short payloadLength, int destId) {
 
     byte messageByteArray[512];
     message.toByteArray(messageByteArray);
-    printByteArray(messageByteArray, 20);
+    //printByteArray(messageByteArray, 20);
 }
 
 void setMaxPendingMsgs(int size)
@@ -143,9 +143,9 @@ void getPendingMsgNum()
     // TODO
 }
 
-void setIncomingMessageHandler(IncomingMessageHandler incomingMessageHandler)
+void setIncomingMessageHandler(IncomingMessageHandler incomingMessageHandlerPrime)
 {
-    incomingMessageHandler = incomingMessageHandler;
+    incomingMessageHandler = incomingMessageHandlerPrime;
 }
 
 void moveToNextMsg(BLEDevice central, BLECharacteristic characterstic)
@@ -222,7 +222,7 @@ void writeNextMessage() {
         byte messageByteArray[512];
         message.toByteArray(messageByteArray);
 
-        printByteArray(messageByteArray, 20);
+        //printByteArray(messageByteArray, 20);
 
         //outgoingMsgChar.setValue(messageByteArray, 512);
 
@@ -234,7 +234,7 @@ void writeNextMessage() {
 
         byte* byteArray = (byte*) outgoingMsgChar.value();
 
-        printByteArray(byteArray, 1);
+        //printByteArray(byteArray, 1);
     }
 
     // TODO: Should it be checked if the message queue
@@ -263,23 +263,34 @@ void onIncomingMsgCharWritten(BLEDevice central, BLECharacteristic characterstic
 
     Serial.println("Message received");
 
-    char *messageChar = (char *)characterstic.value();
+    byte* messageByteArray = (byte*) characterstic.value();
 
-    Serial.print("Message: ");
-    Serial.println(messageChar);
+    //char *messageChar = (char *)characterstic.value();
+
+    /*Serial.print("Message: ");
+    Serial.println(messageChar);*/
 
     Serial.print("Characteristic size: ");
     Serial.println(characterstic.valueSize());
 
-    /*Message message = Message(messageChar);
+    //printByteArray(messageByteArray, 20);
 
-    if (message.getType() == ACK)
+    Message message = Message(messageByteArray);
+
+    /*int msgOne = 1000;
+
+    short payloadLength = sizeof(int);
+    byte* payloadOne = (byte*) &msgOne;
+
+    Message message = Message(12000, (MessageType)DATA, 12, 21, payloadOne, 4);*/
+
+    /*if (message.getType() == ACK)
     {
         // TODO: Check if content is a valid message ID
         messageQueue.removeMessage(atol(message.getContent()));
     }
     else
-    {
+    {*/
         incomingMessageHandler(message);
-    }*/
+    //}
 }

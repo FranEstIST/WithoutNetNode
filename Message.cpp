@@ -27,8 +27,10 @@ Message::Message(byte* rawMessage) {
     memcpy(&_length, lengthPtr, sizeof(short));
     memcpy(&_timestamp, timestampPtr, sizeof(unsigned long));
 
+    _type = MessageType::DATA;
     memcpy(&_type, typePtr, 1);
-    _type >> 8*(sizeof(MessageType) - 1);
+    //memcpy(&_type + 1, "", 1);
+    //_type >> 8*(sizeof(MessageType) - 1);
 
     memcpy(&_sender, senderPtr, sizeof(int));
     memcpy(&_receiver, receiverPtr, sizeof(int));
@@ -151,26 +153,18 @@ void Message::toByteArray(byte* destByteArray) {
     byte* payloadPtr = receiverPtr + sizeof(int);
     byte* endPtr = payloadPtr + payloadSize;
 
+    // The numerical values are stored and transmitted in the little endian format,
+    // so the receiver is responsible for converting it to the big endianess format
+
     memcpy(lengthPtr, &_length, sizeof(short));
     memcpy(timestampPtr, &_timestamp, sizeof(unsigned long));
 
-    // The numerical values are stored in the little endian format,
-    // but they should be transferred in the big endian format
-
-    /*copyAndReverseEndianness(lengthPtr, (byte*) &_length, sizeof(short));
-    copyAndReverseEndianness(timestampPtr, (byte*) &_timestamp, sizeof(unsigned long));
-
-    copyAndReverseEndianness(typePtr, (byte*) &_type, sizeof(MessageType));*/
     memcpy(typePtr, &_type, sizeof(MessageType));
-    *(typePtr) << 8*(sizeof(MessageType) - 1);
+    //*(typePtr) << 8*(sizeof(MessageType) - 1);
 
     memcpy(senderPtr, &_sender, sizeof(int));
     memcpy(receiverPtr, &_receiver, sizeof(int));
 
-    /*copyAndReverseEndianness(senderPtr, (byte*) &_sender, sizeof(int));
-    copyAndReverseEndianness(receiverPtr, (byte*) &_receiver, sizeof(int));*/
-
-    //_payload = (byte*) malloc(payloadSize);
     memcpy(payloadPtr, _payload, payloadSize);
 
     memcpy(endPtr, "", 1);
@@ -204,11 +198,8 @@ void Message::toCharArray(char* destCharArray) {
 
     char payloadStr[512];
     int payloadInt = 0;
-    byte payloadRevEnd[sizeof(int)];
     size_t payloadSize = _length - (sizeof(_timestamp) + 1 + sizeof(_sender) + sizeof(_receiver));
-    //copyAndReverseEndianness(payloadRevEnd, _payload, payloadSize < sizeof(int) ? payloadSize : sizeof(int));
     memcpy(&payloadInt, _payload, payloadSize < sizeof(int) ? payloadSize : sizeof(int));
-    //memcpy(&payloadInt, payloadRevEnd, payloadSize < sizeof(int) ? payloadSize : sizeof(int));
     sprintf(payloadStr, "%d", payloadInt);
 
     //strcat(destCharArray, idStr);
@@ -246,4 +237,12 @@ int Message::getReceiver() const {
 
 byte* Message::getPayload() const {
     return _payload;
+}
+
+int Message::getPayloadAsInt() const {
+    int payloadInt = 0;
+    size_t payloadSize = _length - (sizeof(_timestamp) + 1 + sizeof(_sender) + sizeof(_receiver));
+    memcpy(&payloadInt, _payload, payloadSize < sizeof(int) ? payloadSize : sizeof(int));
+
+    return payloadInt;
 }
