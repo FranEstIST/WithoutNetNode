@@ -8,7 +8,7 @@
 
 typedef void (*IncomingMessageHandler)(Message msg);
 
-int begin(int id, char *localName);
+int begin(int id, char *localName, bool verbose = false);
 void runLoop();
 void sendInt(int msg, int destId);
 void sendChar(char* msg, char* destUuid);

@@ -28,15 +28,17 @@ MessageQueue messageQueue = MessageQueue(10);
 char* _separator = "#";
 bool allMessagesRead = false;
 
-bool verbose = false;
+bool _verbose = false;
 
-int begin(int idPrime, char *localNamePrime, bool verbose = false)
+int begin(int idPrime, char *localNamePrime, bool verbose)
 {
     incomingMessageHandler = nullptr;
 
+    id = idPrime;
+
     memcpy(localName, localNamePrime, strlen(localNamePrime) + 1);
 
-    id = idPrime;
+    _verbose = verbose;
 
     // Begin initialization
     if (!BLE.begin())
@@ -45,8 +47,8 @@ int begin(int idPrime, char *localNamePrime, bool verbose = false)
     }
 
     // TODO: Check if serial has been initialized before printing
-    if(verbose) {
-        Serial.println("--WithoutNet started--");
+    if(_verbose) {
+        Serial.println("--WithoutNet node started--");
 
         Serial.print(">ID: ");
         Serial.println(id);
@@ -96,8 +98,8 @@ void runLoop() {
 
 void sendInt(int msg, int destId)
 {
-    if(verbose) {
-        Serial.print("Message to be added to the message queue: ");
+    if(_verbose) {
+        Serial.print(">Message to be added to the message queue: ");
         Serial.println(msg);
     }
     
@@ -111,8 +113,8 @@ void sendInt(int msg, int destId)
 
 void sendString(char* msg, int destId)
 {
-    if(verbose) {
-        Serial.print("Message to be added to the message queue: ");
+    if(_verbose) {
+        Serial.print(">Message to be added to the message queue: ");
         Serial.println(msg);
     }
 
@@ -128,17 +130,17 @@ void addMessageToQueue(byte* payload, short payloadLength, int destId) {
     char fullMessage[512];
     message.toCharArray(fullMessage);
 
-    if(verbose) {
-        Serial.print("Full message to be added to the message queue: ");
-        Serial.println(fullMessage);
+    if(_verbose) {
+        //Serial.print(">Full message to be added to the message queue: ");
+        //Serial.println(fullMessage);
     }
 
     messageQueue.addMessage(message);
 
     messageCounter++;
 
-    if(verbose) {
-        Serial.print("Message added to the message queue: ");
+    if(_verbose) {
+        Serial.print(">Message added to the message queue: ");
         Serial.println(fullMessage);
     }
 
@@ -191,8 +193,10 @@ void moveToNextMsg(BLEDevice central, BLECharacteristic characterstic)
 
 void onConnected(BLEDevice central)
 {
-    if(verbose) {
-        Serial.println("Connected");
+    if(_verbose) {
+        Serial.print("//------\\\\ Connected to smartphone with address: ");
+        Serial.print(central.address());
+        Serial.println(" //------\\\\");
     }
 
     digitalWrite(LED_BUILTIN, HIGH);
@@ -201,8 +205,10 @@ void onConnected(BLEDevice central)
 
 void onDisconnected(BLEDevice central)
 {
-    if(verbose) {
-        Serial.println("Disconnected");
+    if(_verbose) {
+        Serial.print("\\\\------// Disconnected from smartphone with address: ");
+        Serial.print(central.address());
+        Serial.println(" \\\\------//");
     }
 
     digitalWrite(LED_BUILTIN, LOW);
@@ -236,8 +242,8 @@ void writeNextMessage() {
         char messageCharArray[512];
         message.toCharArray(messageCharArray);
 
-        if(verbose) {
-            Serial.print("Next message in Outgoing Msg Char: ");
+        if(_verbose) {
+            Serial.print(">Next message in Outgoing Msg Char: ");
             Serial.println(messageCharArray);
         }
 
@@ -250,8 +256,8 @@ void writeNextMessage() {
 
         outgoingMsgChar.writeValue(messageByteArray, 512);
     } else {
-        if(verbose) {
-            Serial.println("Sending end message...");
+        if(_verbose) {
+            Serial.println(">Sending end message...");
         }
 
         outgoingMsgChar.writeValue((byte)0x00);
@@ -269,7 +275,7 @@ void writeNextMessage() {
 }
 
 void printByteArray(byte* byteArray, int size) {
-    if(verbose) {
+    if(_verbose) {
         Serial.println("Byte array: ");
     
 
@@ -290,8 +296,8 @@ void onIncomingMsgCharWritten(BLEDevice central, BLECharacteristic characterstic
 
     //characterstic.value();
 
-    if(verbose) {
-        Serial.println("Message received");
+    if(_verbose) {
+        Serial.println(">Message received");
     }
 
     byte* messageByteArray = (byte*) characterstic.value();
@@ -301,8 +307,8 @@ void onIncomingMsgCharWritten(BLEDevice central, BLECharacteristic characterstic
     /*Serial.print("Message: ");
     Serial.println(messageChar);*/
 
-    if(verbose) {
-        Serial.print("Characteristic size: ");
+    if(_verbose) {
+        Serial.print(">Characteristic size: ");
         Serial.println(characterstic.valueSize());
     }
 
