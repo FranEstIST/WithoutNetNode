@@ -1,5 +1,5 @@
-#ifndef WithoutNetSimple_h
-#define WithoutNetSimple_h
+#ifndef WithoutNet_h
+#define WithoutNet_h
 
 #include "Arduino.h"
 #include <ArduinoBLE.h>
