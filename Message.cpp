@@ -81,14 +81,14 @@ _receiver(receiver) {
 
     _length = payloadLength + sizeof(_timestamp) + 1 + sizeof(_sender) + sizeof(_receiver);
 
-    Serial.print("Payload length: ");
+    /*Serial.print("Payload length: ");
     Serial.println(payloadLength);
     Serial.print("Timestamp length: ");
     Serial.println(sizeof(_timestamp));
     Serial.print("Sender length: ");
     Serial.println(sizeof(_sender));
     Serial.print("Receiver length: ");
-    Serial.println(sizeof(_receiver));
+    Serial.println(sizeof(_receiver));*/
 
     _payload = (byte*) malloc(payloadLength);
     memcpy(_payload, payload, payloadLength);
