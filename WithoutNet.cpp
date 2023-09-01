@@ -46,7 +46,6 @@ int begin(int idPrime, char *localNamePrime, bool verbose)
         return 0;
     }
 
-    // TODO: Check if serial has been initialized before printing
     if(_verbose) {
         Serial.println("--WithoutNet node started--");
 
@@ -89,6 +88,14 @@ int begin(int idPrime, char *localNamePrime, bool verbose)
 
     BLE.advertise();
 
+    digitalWrite(LED_BUILTIN, HIGH);
+    delay(500);
+    digitalWrite(LED_BUILTIN, LOW);
+    delay(500);
+    digitalWrite(LED_BUILTIN, HIGH);
+    delay(500);
+    digitalWrite(LED_BUILTIN, LOW);
+
     return 1;
 }
 
@@ -130,11 +137,6 @@ void addMessageToQueue(byte* payload, short payloadLength, int destId) {
     char fullMessage[512];
     message.toCharArray(fullMessage);
 
-    if(_verbose) {
-        //Serial.print(">Full message to be added to the message queue: ");
-        //Serial.println(fullMessage);
-    }
-
     messageQueue.addMessage(message);
 
     messageCounter++;
@@ -166,28 +168,6 @@ void setIncomingMessageHandler(IncomingMessageHandler incomingMessageHandlerPrim
 
 void moveToNextMsg(BLEDevice central, BLECharacteristic characterstic)
 {
-    /*if(!allMessagesRead) {
-        Message message = messageQueue.getNextMessage();
-
-        // Write message to outgoing message char
-        char messageCharArray[512];
-        message.toCharArray(messageCharArray);
-
-        Serial.print("Next message in Outgoing Msg Char: ");
-        Serial.println(messageCharArray);
-
-        outgoingMsgChar.writeValue(messageCharArray);
-    } else {
-        Serial.println("Sending end message...");
-
-        outgoingMsgChar.writeValue("0");
-    }
-
-    // TODO: Should it be checked if the message queue
-    // is empty here?
-    if(messageQueue.reachedLastMessage()) {
-        allMessagesRead = true;
-    }*/
     writeNextMessage();
 }
 
