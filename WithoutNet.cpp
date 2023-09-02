@@ -223,7 +223,7 @@ void resetMessagePointer()
 
 void writeNextChunk() {
     byte messageChunkByteArray[20];
-    int messageChunkSize = 0;
+    int messageChunkLength = 0;
 
     if(!messageQueue.isEmpty()) {
         if(_outgoingMessageChunks.currentChunkIndex == 0) {
@@ -238,26 +238,29 @@ void writeNextChunk() {
             }
         }
 
-        messageChunkSize = _outgoingMessageChunks.message.getByteArrayChunk(messageChunkByteArray, _outgoingMessageChunks.currentChunkIndex);
+        messageChunkLength = _outgoingMessageChunks.message.getByteArrayChunk(messageChunkByteArray, _outgoingMessageChunks.currentChunkIndex);
     }
 
-    if(messageChunkSize == 0) {
+    if(messageChunkLength == 0) {
         // All chunks have been read by the client, now the end message must be sent
 
         messageChunkByteArray[0] = 0x0;
+        messageChunkByteArray[1] = 0x0;
 
         if(messageQueue.isEmpty() || messageQueue.reachedLastMessage()) {
             if(_verbose) {
                 Serial.println(">Sending \"end of message queue\" message...");
             }
 
-            messageChunkByteArray[1] = 0x01;
+            messageChunkByteArray[2] = 0x1;
+            messageChunkByteArray[3] = 0x0;
         } else {
             if(_verbose) {
                 Serial.println(">Sending \"end of message \" message...");
             }
 
-            messageChunkByteArray[1] = 0x00;
+            messageChunkByteArray[2] = 0x00;
+            messageChunkByteArray[3] = 0x0;
         }
 
         _outgoingMessageChunks.currentChunkIndex = 0;
@@ -267,57 +270,16 @@ void writeNextChunk() {
 
     if(_verbose) {
         Serial.print(">Next chunk in Outgoing Msg Char: ");
-        printByteArray(messageChunkByteArray, messageChunkSize == 0 ? 2 : messageChunkSize);
+        printByteArray(messageChunkByteArray, messageChunkLength == 0 ? 4 : messageChunkLength);
     }
 
     // Write the message chunk or end message to the outgoing message char
     outgoingMsgChar.writeValue(messageChunkByteArray, 20);
 }
 
-void writeNextMessage() {
-    if(!allMessagesRead) {
-        Message message = messageQueue.getNextMessage();
-
-        // Write message to outgoing message char
-        char messageCharArray[512];
-        message.toCharArray(messageCharArray);
-
-        if(_verbose) {
-            Serial.print(">Next message in Outgoing Msg Char: ");
-            Serial.println(messageCharArray);
-        }
-
-        byte messageByteArray[512];
-        message.toByteArray(messageByteArray);
-
-        //printByteArray(messageByteArray, 20);
-
-        //outgoingMsgChar.setValue(messageByteArray, 512);
-
-        outgoingMsgChar.writeValue(messageByteArray, 512);
-    } else {
-        if(_verbose) {
-            Serial.println(">Sending end message...");
-        }
-
-        outgoingMsgChar.writeValue((byte)0x00);
-
-        byte* byteArray = (byte*) outgoingMsgChar.value();
-
-        //printByteArray(byteArray, 1);
-    }
-
-    // TODO: Should it be checked if the message queue
-    // is empty here?
-    if(messageQueue.reachedLastMessage()) {
-        allMessagesRead = true;
-    }
-}
-
 void printByteArray(byte* byteArray, int size) {
     if(_verbose) {
         Serial.println("Byte array: ");
-    
 
         for(int i = 0; i < size; i++) {
             Serial.print("Index ");
@@ -345,7 +307,7 @@ void onIncomingMsgCharWritten(BLEDevice central, BLECharacteristic characterstic
     byte* messageChunkByteArray = (byte*) characterstic.value();
 
     short messageChunkLength;
-    memcpy(&messageChunkLength, messageChunkByteArray, sizeof(short));
+    memcpy(&messageChunkLength, messageChunkByteArray, LENGTH_SIZE);
 
     if(messageChunkLength == 0) {
         // All of the message's chunks have been received. It's time to build the message
@@ -353,7 +315,7 @@ void onIncomingMsgCharWritten(BLEDevice central, BLECharacteristic characterstic
         // Add the total message length to the start of the message
         memcpy(_incomingMessageChunks.messageByteArray, 
         &_incomingMessageChunks.messageLength, 
-        sizeof(short));
+        LENGTH_SIZE);
 
         Message message = Message(_incomingMessageChunks.messageByteArray);
 
@@ -389,8 +351,8 @@ void onIncomingMsgCharWritten(BLEDevice central, BLECharacteristic characterstic
     }
 
     // Add the current chunk to the rest of the incoming message
-    memcpy(_incomingMessageChunks.messageByteArray + (_incomingMessageChunks.currentChunkIndex == 0 ? sizeof(short) : _incomingMessageChunks.currentChunkIndex * 20), 
-    messageChunkByteArray + sizeof(short), 
+    memcpy(_incomingMessageChunks.messageByteArray + (_incomingMessageChunks.currentChunkIndex == 0 ? LENGTH_SIZE : _incomingMessageChunks.currentChunkIndex * 20), 
+    messageChunkByteArray + LENGTH_SIZE, 
     messageChunkLength);
 
     _incomingMessageChunks.messageLength += messageChunkLength;

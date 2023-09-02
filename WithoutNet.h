@@ -23,7 +23,7 @@ static void onDisconnected(BLEDevice central);
 static void moveToNextMsg(BLEDevice central, BLECharacteristic characteristic);
 static void resetMessagePointer();
 
-static void writeNextMessage();
+static void writeNextChunk();
 void printByteArray(byte* byteArray, int size);
 
 static void onIncomingMsgCharWritten(BLEDevice central, BLECharacteristic characteristic);

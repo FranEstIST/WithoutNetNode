@@ -209,7 +209,7 @@ int Message::getByteArrayChunk(byte *destByteArray, int chunkIndex) {
         memcpy(destLengthPtr, &chunkLength, sizeof(short));
         memcpy(destPayloadPtr, _payload + payloadOffset, payloadChunkSize);
         // Return the total size of the message chunk
-        return sizeof(short) + chunkLength
+        return sizeof(short) + chunkLength;
     } else {
         // There are no more message chunks
         return 0;

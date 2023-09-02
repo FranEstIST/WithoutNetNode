@@ -1,6 +1,12 @@
 #ifndef MESSAGE_H
 #define MESSAGE_H
 
+#define LENGTH_SIZE sizeof(short)
+#define TIMESTAMP_SIZE sizeof(unsigned long)
+#define TYPE_SIZE 1
+#define SENDER_SIZE sizeof(int)
+#define RECEIVER_SIZE sizeof(int)
+
 #include <cstdlib>
 
 typedef unsigned char byte;
