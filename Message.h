@@ -20,6 +20,7 @@ class Message {
         void toByteArray(byte* destByteArray);
         static void copyAndReverseEndianness(byte* dst, byte* src, size_t size);
         void toCharArray(char* destCharArray);
+        int getByteArrayChunk(byte* destByteArray, int chunkIndex);
 
         short getLength() const;
         unsigned long getTimestamp() const;

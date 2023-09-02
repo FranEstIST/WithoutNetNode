@@ -170,6 +170,52 @@ void Message::toByteArray(byte* destByteArray) {
     memcpy(endPtr, "", 1);
 }
 
+int Message::getByteArrayChunk(byte *destByteArray, int chunkIndex) {
+    // The total chunk size is always <= 20, so the destByteArray so be 20 byte long
+
+    size_t payloadSize = _length - (sizeof(_timestamp) + 1 + sizeof(_sender) + sizeof(_receiver));
+    int payloadOffset  = chunkIndex * 18;
+
+    byte *destPayloadPtr;
+    short payloadChunkSize;
+
+    byte *destLengthPtr = destByteArray;
+    short chunkLength;
+
+    if (chunkIndex == 0) { 
+        byte *destTimestampPtr = destLengthPtr + sizeof(short);
+        byte *destTypePtr = destTimestampPtr + sizeof(unsigned long);
+        byte *destSenderPtr = destTypePtr + 1;
+        byte *destReceiverPtr = destSenderPtr + sizeof(int);
+        
+        // The numerical values are stored and transmitted in the little endian format,
+        // so the receiver is responsible for converting them to the big endian format
+
+        memcpy(destTimestampPtr, &_timestamp, sizeof(unsigned long));
+        memcpy(destTypePtr, &_type, sizeof(MessageType));
+        memcpy(destSenderPtr, &_sender, sizeof(int));
+        memcpy(destReceiverPtr, &_receiver, sizeof(int));
+
+        payloadChunkSize = payloadSize < 5 ? payloadSize : 5;
+        destPayloadPtr = destReceiverPtr + sizeof(int);
+        chunkLength = sizeof(_timestamp) + 1 + sizeof(_sender) + sizeof(_receiver) + payloadChunkSize;
+    } else {
+        payloadChunkSize = (payloadSize - payloadOffset) < 18 ? (payloadSize - payloadOffset) : 18;
+        destPayloadPtr = destLengthPtr + sizeof(short);
+        chunkLength = payloadChunkSize;
+    }
+
+    if(payloadChunkSize > 0) {
+        memcpy(destLengthPtr, &chunkLength, sizeof(short));
+        memcpy(destPayloadPtr, _payload + payloadOffset, payloadChunkSize);
+        // Return the total size of the message chunk
+        return sizeof(short) + chunkLength
+    } else {
+        // There are no more message chunks
+        return 0;
+    }
+}
+
 void Message::copyAndReverseEndianness(byte* dst, byte* src, size_t size) {
     int i = size - 1;
 

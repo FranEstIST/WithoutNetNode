@@ -30,6 +30,17 @@ bool allMessagesRead = false;
 
 bool _verbose = false;
 
+Message _currentMesssage;
+char _currentMessageByteArray[512];
+short _currentMessageLength;
+bool _hasSentAllChunks = true;
+int _currentChunkIndex = -1;
+
+char _currentIncomingMessageByteArray[512];
+int _currentIncomingMessageChunkIndex = 0;
+short _currentIncomingMessageLength = 0;
+
+
 int begin(int idPrime, char *localNamePrime, bool verbose)
 {
     incomingMessageHandler = nullptr;
@@ -196,22 +207,75 @@ void onDisconnected(BLEDevice central)
 
 void resetMessagePointer()
 {
-    if(messageQueue.isEmpty()) {
+    if(!messageQueue.isEmpty()) {
+        messageQueue.moveToStart();
+    }
+
+    writeNextMessage();
+
+    /*if(messageQueue.isEmpty()) {
         allMessagesRead = true;
     } else {
         messageQueue.moveToStart();
         allMessagesRead = false;
         writeNextMessage();
+    }*/
+
+}
+
+void writeNextChuck() {
+    byte messageChunkByteArray[20];
+    int messageChunkSize = 0;
+
+    if(!messageQueue.isEmpty()) {
+        if(_currentChunkIndex == -1) {
+            _currentMesssage = messageQueue.getNextMessage();
+            _currentChunkIndex = 0;
+
+            if(_verbose) {
+                char currentMessageCharArray[512];
+                _currentMesssage.toCharArray(currentMessageCharArray);
+
+                Serial.print(">Next message in Outgoing Msg Char: ");
+                Serial.println(currentMessageCharArray);
+            }
+        }
+
+        messageChunkSize = _currentMesssage.getByteArrayChunk(messageChunkByteArray, _currentChunkIndex);
     }
     
 
-    /*Message message = messageQueue.getNextMessage();
+    if(messageChunkSize == 0) {
+        // All chunks have been read by the client, now the end message must be sent
 
-    // Write message to outgoing message char
-    char messageCharArray[512];
-    message.toCharArray(messageCharArray);
-    outgoingMsgChar.setValue(messageCharArray);*/
+        messageChunkByteArray[0] = 0x0;
 
+        if(messageQueue.isEmpty() || messageQueue.reachedLastMessage()) {
+            if(_verbose) {
+                Serial.println(">Sending \"end of message queue\" message...");
+            }
+
+            messageChunkByteArray[1] = 0x01;
+        } else {
+            if(_verbose) {
+                Serial.println(">Sending \"end of message \" message...");
+            }
+
+            messageChunkByteArray[1] = 0x00;
+        }
+
+        _currentChunkIndex = -1;
+    } else {
+        _currentChunkIndex++;
+    }
+
+    if(_verbose) {
+        Serial.print(">Next chunk in Outgoing Msg Char: ");
+        printByteArray(messageChunkByteArray, messageChunkSize == 0 ? 2 : messageChunkSize);
+    }
+
+    // Write the message chunk or end message to the outgoing message char
+    outgoingMsgChar.writeValue(messageChunkByteArray, 20);
 }
 
 void writeNextMessage() {
@@ -277,39 +341,75 @@ void onIncomingMsgCharWritten(BLEDevice central, BLECharacteristic characterstic
     //characterstic.value();
 
     if(_verbose) {
-        Serial.println(">Message received");
+        Serial.println(">Message chunk received");
+
+        char *messageChar = (char *)characterstic.value();
+
+        Serial.print(">Message chunk: ");
+        Serial.println(messageChar);
+
+        /*Serial.print(">Characteristic size: ");
+        Serial.println(characterstic.valueSize());*/
     }
 
-    byte* messageByteArray = (byte*) characterstic.value();
+    byte* messageChunkByteArray = (byte*) characterstic.value();
 
-    //char *messageChar = (char *)characterstic.value();
+    short chunkLength;
+    memcpy(&chunkLength, messageChunkByteArray, sizeof(short));
 
-    /*Serial.print("Message: ");
-    Serial.println(messageChar);*/
+    if(chunkLength == 0) {
+        // All of the message's chunks have been received. It's time to build the message
+        memcpy(_currentIncomingMessageByteArray, 
+        &_currentIncomingMessageLength, 
+        sizeof(short));
 
+        Message message = Message(_currentMessageByteArray);
+
+        _currentIncomingMessageChunkIndex = 0;
+        _currentIncomingMessageLength = 0;
+
+        if(_verbose) {
+            char messageChar[512];
+            message.toCharArray(messageChar);
+
+            Serial.print(">Complete message received: ");
+            Serial.println(messageChar);
+        }
+
+        /*int msgOne = 1000;
+
+        short payloadLength = sizeof(int);
+        byte* payloadOne = (byte*) &msgOne;
+
+        Message message = Message(12000, (MessageType)DATA, 12, 21, payloadOne, 4);*/
+
+        /*if (message.getType() == ACK)
+        {
+            // TODO: Check if content is a valid message ID
+            messageQueue.removeMessage(atol(message.getContent()));
+        }
+        else
+        {*/
+            incomingMessageHandler(message);
+        //}
+
+        return;
+    }
+
+    memcpy(_currentIncomingMessageByteArray + (_currentIncomingMessageChunkIndex == 0 ? sizeof(short) : _currentIncomingMessageChunkIndex * 20), 
+    messageChunkByteArray + sizeof(short), 
+    chunkLength);
+
+    _currentIncomingMessageLength += chunkLength;
+    
     if(_verbose) {
+        char *messageChar = (char *)characterstic.value();
+
+        Serial.print(">Message: ");
+        Serial.println(messageChar);
+
         Serial.print(">Characteristic size: ");
         Serial.println(characterstic.valueSize());
     }
 
-    //printByteArray(messageByteArray, 20);
-
-    Message message = Message(messageByteArray);
-
-    /*int msgOne = 1000;
-
-    short payloadLength = sizeof(int);
-    byte* payloadOne = (byte*) &msgOne;
-
-    Message message = Message(12000, (MessageType)DATA, 12, 21, payloadOne, 4);*/
-
-    /*if (message.getType() == ACK)
-    {
-        // TODO: Check if content is a valid message ID
-        messageQueue.removeMessage(atol(message.getContent()));
-    }
-    else
-    {*/
-        incomingMessageHandler(message);
-    //}
 }
