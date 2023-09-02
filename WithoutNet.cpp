@@ -40,6 +40,13 @@ char _currentIncomingMessageByteArray[512];
 int _currentIncomingMessageChunkIndex = 0;
 short _currentIncomingMessageLength = 0;
 
+struct {
+    Message message;
+    byte messageByteArray[512];
+    int currentChunkIndex = 0;
+    short messageLength = 0;
+} _incomingMessageChunks, _outgoingMessageChunks;
+
 
 int begin(int idPrime, char *localNamePrime, bool verbose)
 {
@@ -179,7 +186,7 @@ void setIncomingMessageHandler(IncomingMessageHandler incomingMessageHandlerPrim
 
 void moveToNextMsg(BLEDevice central, BLECharacteristic characterstic)
 {
-    writeNextMessage();
+    writeNextChunk();
 }
 
 void onConnected(BLEDevice central)
@@ -211,39 +218,28 @@ void resetMessagePointer()
         messageQueue.moveToStart();
     }
 
-    writeNextMessage();
-
-    /*if(messageQueue.isEmpty()) {
-        allMessagesRead = true;
-    } else {
-        messageQueue.moveToStart();
-        allMessagesRead = false;
-        writeNextMessage();
-    }*/
-
+    writeNextChunk();
 }
 
-void writeNextChuck() {
+void writeNextChunk() {
     byte messageChunkByteArray[20];
     int messageChunkSize = 0;
 
     if(!messageQueue.isEmpty()) {
-        if(_currentChunkIndex == -1) {
-            _currentMesssage = messageQueue.getNextMessage();
-            _currentChunkIndex = 0;
+        if(_outgoingMessageChunks.currentChunkIndex == 0) {
+            _outgoingMessageChunks.message = messageQueue.getNextMessage();
 
             if(_verbose) {
                 char currentMessageCharArray[512];
-                _currentMesssage.toCharArray(currentMessageCharArray);
+                _outgoingMessageChunks.message.toCharArray(currentMessageCharArray);
 
                 Serial.print(">Next message in Outgoing Msg Char: ");
                 Serial.println(currentMessageCharArray);
             }
         }
 
-        messageChunkSize = _currentMesssage.getByteArrayChunk(messageChunkByteArray, _currentChunkIndex);
+        messageChunkSize = _outgoingMessageChunks.message.getByteArrayChunk(messageChunkByteArray, _outgoingMessageChunks.currentChunkIndex);
     }
-    
 
     if(messageChunkSize == 0) {
         // All chunks have been read by the client, now the end message must be sent
@@ -264,9 +260,9 @@ void writeNextChuck() {
             messageChunkByteArray[1] = 0x00;
         }
 
-        _currentChunkIndex = -1;
+        _outgoingMessageChunks.currentChunkIndex = 0;
     } else {
-        _currentChunkIndex++;
+        _outgoingMessageChunks.currentChunkIndex++;
     }
 
     if(_verbose) {
@@ -333,13 +329,7 @@ void printByteArray(byte* byteArray, int size) {
     }
 }
 
-void onIncomingMsgCharWritten(BLEDevice central, BLECharacteristic characterstic)
-{
-    // Get the char* inside the imchar
-    // Call onIncomingMessageReceived(char* msg)
-
-    //characterstic.value();
-
+void onIncomingMsgCharWritten(BLEDevice central, BLECharacteristic characterstic) {
     if(_verbose) {
         Serial.println(">Message chunk received");
 
@@ -354,19 +344,18 @@ void onIncomingMsgCharWritten(BLEDevice central, BLECharacteristic characterstic
 
     byte* messageChunkByteArray = (byte*) characterstic.value();
 
-    short chunkLength;
-    memcpy(&chunkLength, messageChunkByteArray, sizeof(short));
+    short messageChunkLength;
+    memcpy(&messageChunkLength, messageChunkByteArray, sizeof(short));
 
-    if(chunkLength == 0) {
+    if(messageChunkLength == 0) {
         // All of the message's chunks have been received. It's time to build the message
-        memcpy(_currentIncomingMessageByteArray, 
-        &_currentIncomingMessageLength, 
+
+        // Add the total message length to the start of the message
+        memcpy(_incomingMessageChunks.messageByteArray, 
+        &_incomingMessageChunks.messageLength, 
         sizeof(short));
 
-        Message message = Message(_currentMessageByteArray);
-
-        _currentIncomingMessageChunkIndex = 0;
-        _currentIncomingMessageLength = 0;
+        Message message = Message(_incomingMessageChunks.messageByteArray);
 
         if(_verbose) {
             char messageChar[512];
@@ -375,6 +364,9 @@ void onIncomingMsgCharWritten(BLEDevice central, BLECharacteristic characterstic
             Serial.print(">Complete message received: ");
             Serial.println(messageChar);
         }
+
+        _incomingMessageChunks.messageLength = 0;
+        _incomingMessageChunks.currentChunkIndex = 0;
 
         /*int msgOne = 1000;
 
@@ -396,11 +388,13 @@ void onIncomingMsgCharWritten(BLEDevice central, BLECharacteristic characterstic
         return;
     }
 
-    memcpy(_currentIncomingMessageByteArray + (_currentIncomingMessageChunkIndex == 0 ? sizeof(short) : _currentIncomingMessageChunkIndex * 20), 
+    // Add the current chunk to the rest of the incoming message
+    memcpy(_incomingMessageChunks.messageByteArray + (_incomingMessageChunks.currentChunkIndex == 0 ? sizeof(short) : _incomingMessageChunks.currentChunkIndex * 20), 
     messageChunkByteArray + sizeof(short), 
-    chunkLength);
+    messageChunkLength);
 
-    _currentIncomingMessageLength += chunkLength;
+    _incomingMessageChunks.messageLength += messageChunkLength;
+    _incomingMessageChunks.currentChunkIndex++;
     
     if(_verbose) {
         char *messageChar = (char *)characterstic.value();
