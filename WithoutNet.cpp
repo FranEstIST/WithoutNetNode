@@ -31,7 +31,6 @@ bool allMessagesRead = false;
 bool _verbose = false;
 
 struct {
-    Message message;
     byte messageByteArray[512];
     int currentChunkIndex = 0;
     short messageLength = 0;
@@ -83,8 +82,15 @@ int begin(int idPrime, char *localNamePrime, bool verbose)
     //WNService.hasCharacteristic()
 
     nodeUuidChar.writeValue(id);
-    outgoingMsgChar.writeValue("0");
-    incomingMsgChar.writeValue("0");
+
+    byte emptyMessageByteArray[20];
+
+    for(int i = 0; i < 20; i++) {
+        emptyMessageByteArray[i] = 0;
+    }
+
+    outgoingMsgChar.writeValue(emptyMessageByteArray, 20);
+    incomingMsgChar.writeValue(emptyMessageByteArray, 20);
 
     incomingMsgChar.setEventHandler(BLEWritten, onIncomingMsgCharWritten);
     outgoingMsgChar.setEventHandler(BLERead, moveToNextMsg);
@@ -204,34 +210,50 @@ void onDisconnected(BLEDevice central)
 
 void resetMessagePointer()
 {
+    // TODO: Reset the chunks here too
+    _outgoingMessageChunks.currentChunkIndex = 0;
+    _incomingMessageChunks.currentChunkIndex = 0;
+
     if(!messageQueue.isEmpty()) {
         messageQueue.moveToStart();
     }
 
-    writeNextChunk();
+    //writeNextChunk();
 }
 
 void writeNextChunk() {
     byte messageChunkByteArray[20];
-    int messageChunkLength = 0;
+    short messageChunkLength = 0;
+
+    // Init message chunk byte array to 0's,
+    // so that the outgoing message characteristic
+    // is 20 byte long and has no junk values at
+    // the end
+    for(int i = 0; i < 0; i++) {
+        messageChunkByteArray[i] = 0x0;
+    }
 
     if(!messageQueue.isEmpty()) {
         if(_outgoingMessageChunks.currentChunkIndex == 0) {
-            _outgoingMessageChunks.message = messageQueue.getNextMessage();
+            Message outgoingMessage = messageQueue.getNextMessage();
+            outgoingMessage.toByteArray(_outgoingMessageChunks.messageByteArray);
+            _outgoingMessageChunks.messageLength = outgoingMessage.getLength();
 
             if(_verbose) {
                 char currentMessageCharArray[512];
-                _outgoingMessageChunks.message.toCharArray(currentMessageCharArray);
+                outgoingMessage.toCharArray(currentMessageCharArray);
 
                 Serial.print(">Next message in Outgoing Msg Char: ");
                 Serial.println(currentMessageCharArray);
             }
         }
-
-        messageChunkLength = _outgoingMessageChunks.message.getByteArrayChunk(messageChunkByteArray, _outgoingMessageChunks.currentChunkIndex);
+        
+        // TODO: Message chunking must be done here
+        short remainingMessageLength = _outgoingMessageChunks.messageLength - 18 * _outgoingMessageChunks.currentChunkIndex;
+        messageChunkLength = 18 > remainingMessageLength ? remainingMessageLength : 18;
     }
 
-    if(messageChunkLength == 0) {
+    if(messageChunkLength <= 0) {
         // All chunks have been read by the client, now the end message must be sent
 
         messageChunkByteArray[0] = 0x0;
@@ -255,16 +277,31 @@ void writeNextChunk() {
 
         _outgoingMessageChunks.currentChunkIndex = 0;
     } else {
+        short messageOffset = 2 + 18 * _outgoingMessageChunks.currentChunkIndex;
+
+        memcpy(messageChunkByteArray, &messageChunkLength, sizeof(short));
+        memcpy(messageChunkByteArray + sizeof(short), _outgoingMessageChunks.messageByteArray + messageOffset, messageChunkLength);
+
         _outgoingMessageChunks.currentChunkIndex++;
     }
 
     if(_verbose) {
-        Serial.print(">Next chunk in Outgoing Msg Char: ");
-        printByteArray(messageChunkByteArray, messageChunkLength == 0 ? 4 : messageChunkLength);
+        //Serial.print(">Next chunk in Outgoing Msg Char: ");
+        //printByteArray(messageChunkByteArray, messageChunkLength == 0 ? 4 : messageChunkLength);
+        if(_outgoingMessageChunks.currentChunkIndex > 0) {
+            Serial.print(">Sending chunk ");
+            Serial.println(_outgoingMessageChunks.currentChunkIndex);
+        } 
+        printByteArrayCompact(messageChunkByteArray, messageChunkLength <= 0 ? 4 : messageChunkLength);
     }
 
     // Write the message chunk or end message to the outgoing message char
     outgoingMsgChar.writeValue(messageChunkByteArray, 20);
+
+    if(_verbose) {
+        Serial.print(">Content in outgoing message characteristic: ");
+        printByteArrayCompact((byte*) outgoingMsgChar.value(), 20);
+    }
 }
 
 void printByteArray(byte* byteArray, int size) {
@@ -278,6 +315,19 @@ void printByteArray(byte* byteArray, int size) {
             Serial.println((int) byteArray[i]);
         }
     
+    }
+}
+
+void printByteArrayCompact(byte* byteArray, int size) {
+    if(_verbose) {
+        Serial.println("Byte array: ");
+
+        for(int i = 0; i < size; i++) {
+            Serial.print((int) byteArray[i]);
+            Serial.print("#");
+        }
+
+        Serial.println("");
     }
 }
 

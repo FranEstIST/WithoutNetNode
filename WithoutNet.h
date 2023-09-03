@@ -25,6 +25,7 @@ static void resetMessagePointer();
 
 static void writeNextChunk();
 void printByteArray(byte* byteArray, int size);
+void printByteArrayCompact(byte* byteArray, int size);
 
 static void onIncomingMsgCharWritten(BLEDevice central, BLECharacteristic characteristic);
 void dequeueMsg(char* msgUuid);
