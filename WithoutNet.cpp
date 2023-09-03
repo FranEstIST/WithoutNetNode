@@ -214,6 +214,9 @@ void resetMessagePointer()
     _outgoingMessageChunks.currentChunkIndex = 0;
     _incomingMessageChunks.currentChunkIndex = 0;
 
+    _outgoingMessageChunks.messageLength = 0;
+    _incomingMessageChunks.messageLength = 0;
+
     if(!messageQueue.isEmpty()) {
         messageQueue.moveToStart();
     }
@@ -333,12 +336,12 @@ void printByteArrayCompact(byte* byteArray, int size) {
 
 void onIncomingMsgCharWritten(BLEDevice central, BLECharacteristic characterstic) {
     if(_verbose) {
-        Serial.println(">Message chunk received");
+        Serial.print(">Message chunk ");
+        Serial.print(_incomingMessageChunks.currentChunkIndex + 1);
+        Serial.println(" received");
 
-        char *messageChar = (char *)characterstic.value();
-
-        Serial.print(">Message chunk: ");
-        Serial.println(messageChar);
+        //Serial.println(">Message chunk received: ");
+        //printByteArrayCompact((byte*)characterstic.value(), 20);
 
         /*Serial.print(">Characteristic size: ");
         Serial.println(characterstic.valueSize());*/
@@ -391,21 +394,18 @@ void onIncomingMsgCharWritten(BLEDevice central, BLECharacteristic characterstic
     }
 
     // Add the current chunk to the rest of the incoming message
-    memcpy(_incomingMessageChunks.messageByteArray + (_incomingMessageChunks.currentChunkIndex == 0 ? LENGTH_SIZE : _incomingMessageChunks.currentChunkIndex * 20), 
+    memcpy(_incomingMessageChunks.messageByteArray + (_incomingMessageChunks.currentChunkIndex == 0 ? LENGTH_SIZE : _incomingMessageChunks.currentChunkIndex * 18), 
     messageChunkByteArray + LENGTH_SIZE, 
     messageChunkLength);
 
     _incomingMessageChunks.messageLength += messageChunkLength;
     _incomingMessageChunks.currentChunkIndex++;
     
-    if(_verbose) {
+    /*if(_verbose) {
         char *messageChar = (char *)characterstic.value();
 
-        Serial.print(">Message: ");
+        Serial.print(">Message after chunk appended: ");
         Serial.println(messageChar);
-
-        Serial.print(">Characteristic size: ");
-        Serial.println(characterstic.valueSize());
-    }
+    }*/
 
 }
