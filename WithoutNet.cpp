@@ -30,16 +30,6 @@ bool allMessagesRead = false;
 
 bool _verbose = false;
 
-Message _currentMesssage;
-char _currentMessageByteArray[512];
-short _currentMessageLength;
-bool _hasSentAllChunks = true;
-int _currentChunkIndex = -1;
-
-char _currentIncomingMessageByteArray[512];
-int _currentIncomingMessageChunkIndex = 0;
-short _currentIncomingMessageLength = 0;
-
 struct {
     Message message;
     byte messageByteArray[512];
