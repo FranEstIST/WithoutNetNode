@@ -285,10 +285,19 @@ byte* Message::getPayload() const {
     return _payload;
 }
 
+short Message::getPayloadLength() const {
+    return _length - (sizeof(_timestamp) + 1 + sizeof(_sender) + sizeof(_receiver));
+}
+
 int Message::getPayloadAsInt() const {
     int payloadInt = 0;
     size_t payloadSize = _length - (sizeof(_timestamp) + 1 + sizeof(_sender) + sizeof(_receiver));
     memcpy(&payloadInt, _payload, payloadSize < sizeof(int) ? payloadSize : sizeof(int));
 
     return payloadInt;
+}
+
+void Message::getPayloadAsCharArray(char* destCharArray, int destCharArraySize) const {
+    size_t payloadSize = _length - (sizeof(_timestamp) + 1 + sizeof(_sender) + sizeof(_receiver));
+    memcpy(destCharArray, _payload, payloadSize < destCharArraySize ? payloadSize : destCharArraySize);
 }

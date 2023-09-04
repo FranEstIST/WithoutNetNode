@@ -34,7 +34,9 @@ class Message {
         int getSender() const;
         int getReceiver() const;
         byte* getPayload() const;
+        short getPayloadLength() const;
         int getPayloadAsInt() const;
+        void getPayloadAsCharArray(char* destCharArray, int destCharArraySize) const;
         
     private:
         short _length;
