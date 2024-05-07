@@ -247,7 +247,7 @@ void writeNextChunk()
     // so that the outgoing message characteristic
     // is 20 byte long and has no junk values at
     // the end
-    for (int i = 0; i < 0; i++)
+    for (int i = 0; i < 20; i++)
     {
         messageChunkByteArray[i] = 0x0;
     }
@@ -296,7 +296,7 @@ void writeNextChunk()
         {
             if (_verbose)
             {
-                Serial.println(">Sending \"end of message \" message...");
+                Serial.println(">Sending \"end of message\" message...");
             }
 
             messageChunkByteArray[2] = 0x00;
