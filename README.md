@@ -13,7 +13,7 @@ To include it in your Arduino code, simply write `#include <WithoutNet.h>` at th
 
 To initialize WithoutNet, simply run in the `setup` block:
 <code>
-while(!begin(&lt;node-id&gt, &lt;name&gt;, &lt;timestamp-offset&gt;, &lt;is-verbose&gt;));
+while(!begin(&lt;node-id&gt;, &lt;name&gt;, &lt;timestamp-offset&gt;, &lt;is-verbose&gt;));
 </code>
 
 To send a message, call either:
