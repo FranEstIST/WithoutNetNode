@@ -13,19 +13,14 @@ To include it in your Arduino code, simply write `#include <WithoutNet.h>` at th
 
 To initialize WithoutNet, simply run in the `setup` block:
 <code>
-while(!begin(&lt;node-id&gt, &lt;name&gt;, &lt;timestamp-offset&gt;, &lt;is-verbose&gt;)) {
-if(verbose) {
-    Serial.println("Failed to start WN");
-    Serial.println("Retrying...");
-    }
-}
+while(!begin(&lt;node-id&gt, &lt;name&gt;, &lt;timestamp-offset&gt;, &lt;is-verbose&gt;));
 </code>
 
 To send a message, call either:
 
 <ol>
-  <li><code>send(&lt;int-message&gt;, &lt;dest-node-id&gt;)</code></li>
-  <li><code>sendInt(&lt;byte-array-message&gt;, &lt;dest-node-id&gt;)</code></li>
+  <li><code>sendInt(&lt;int-message&gt;, &lt;dest-node-id&gt;)</code></li>
+  <li><code>send(&lt;byte-array-message&gt;, &lt;dest-node-id&gt;)</code></li>
 </ol>
 
 To set the routine for handling incoming messages, run `setIncomingMessageHandler(<routine>)` in the `setup` block.
