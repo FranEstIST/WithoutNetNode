@@ -108,7 +108,11 @@ int begin(int idPrime, char *localNamePrime, long timestampOffset,
 
     BLE.addService(WNService);  // Add the WN Service
 
+    BLE.setAdvertisingInterval(320);  // 200ms/0.625ms
+
     BLE.advertise();
+
+    BLE.setSupervisionTimeout(2000);
 
     digitalWrite(LED_BUILTIN, HIGH);
     delay(500);
